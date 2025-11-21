@@ -4,6 +4,24 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Teklif Oluşturucu</title>
+    
+    <!-- External Libraries -->
+    <!-- Quill Rich Text Editor for formatting (bold, italic) -->
+    <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+    <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
+    
+    <!-- QR Code Generator -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+    
+    <!-- jsPDF for PDF generation (for bulk download) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    
+    <!-- EmailJS for email sending -->
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+    
+    <!-- SweetAlert2 for better popups/confirmations -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
     <style>
         /* ==============================================
            GENEL STİLLER (GENERAL STYLES)
@@ -48,6 +66,58 @@
             padding: 20px;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
             margin-bottom: 30px;
+        }
+        
+        /* Sticky Action Buttons */
+        .sticky-actions {
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            background-color: var(--bg-white);
+            padding: 15px 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+            border-radius: 8px;
+        }
+        
+        .sticky-actions .btn-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        /* Tooltip styles */
+        [data-tooltip] {
+            position: relative;
+            cursor: help;
+        }
+        
+        [data-tooltip]:hover::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 8px 12px;
+            background-color: var(--text-dark);
+            color: white;
+            border-radius: 6px;
+            font-size: 12px;
+            white-space: nowrap;
+            z-index: 1000;
+            margin-bottom: 5px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+        
+        [data-tooltip]:hover::before {
+            content: '';
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 5px solid transparent;
+            border-top-color: var(--text-dark);
+            margin-bottom: -5px;
         }
 
         .header h1 {
@@ -437,6 +507,12 @@
             text-align: center;
             flex: 1;
         }
+        
+        .pdf-header-qr {
+            width: 60px;
+            height: 60px;
+            margin-left: 20px;
+        }
 
         .pdf-header-text h1 {
             font-size: 20pt;
@@ -613,6 +689,36 @@
             align-items: center;
             gap: 15px;
         }
+        
+        .pdf-footer-right {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            font-size: 9pt;
+        }
+        
+        .pdf-footer-right div {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        /* Mail icon size fix - make it same size as others */
+        .pdf-footer-right div:first-child {
+            font-size: 11pt;
+        }
+        
+        .pdf-footer-right div:nth-child(2) {
+            font-size: 11pt;
+        }
+        
+        .pdf-footer-right div:nth-child(3) {
+            font-size: 11pt;
+        }
+        
+        .pdf-footer-right a {
+            font-size: inherit;
+        }
 
         /* Quote Scope Section */
         .quote-scope-section {
@@ -720,18 +826,76 @@
                 margin: 1.5cm;
                 size: A4 portrait;
             }
+            
+            /* Remove URL and date/time from print */
+            @page {
+                @top-left {
+                    content: "";
+                }
+                @top-right {
+                    content: "";
+                }
+            }
+            
+            /* Alternative method - hide browser print headers */
+            @media print {
+                @page {
+                    margin: 1.5cm;
+                }
+            }
 
             .pdf-header,
             .pdf-footer,
-            .quote-items-table-pdf {
+            .quote-items-table-pdf,
+            .quote-signature-section {
                 page-break-inside: avoid;
+            }
+            
+            /* Page break improvements */
+            .quote-notes-section {
+                page-break-inside: avoid;
+            }
+            
+            .quote-notes-header {
+                page-break-after: avoid;
+            }
+            
+            /* Repeat header on each page for explanations */
+            .quote-notes-section > div:not(.quote-notes-header) {
+                page-break-inside: auto;
+            }
+            
+            /* Add header repetition using CSS (limited browser support) */
+            @supports (position: running(header)) {
+                .quote-notes-header {
+                    position: running(notes-header);
+                }
+                
+                .quote-notes-section > div:not(.quote-notes-header)::before {
+                    content: element(notes-header);
+                    display: block;
+                    margin-bottom: 15px;
+                }
+            }
+            
+            /* Keep table rows together when possible */
+            .quote-items-table-pdf tr {
+                page-break-inside: avoid;
+            }
+            
+            /* Allow breaking between main item and detail rows */
+            .main-item-row {
+                page-break-after: avoid;
+            }
+            
+            .detail-row {
+                page-break-before: avoid;
             }
 
             /* Make sure colors print */
             * {
                 -webkit-print-color-adjust: exact;
                 print-color-adjust: exact;
-                color-adjust: exact;
             }
         }
 
@@ -935,32 +1099,19 @@
                 </div>
             </div>
 
-            <h3 style="margin-top: 30px; margin-bottom: 15px;">Banka Bilgileri</h3>
-            <div class="form-grid">
-                <div class="form-group">
-                    <label>Banka Adı</label>
-                    <input type="text" id="bankName" placeholder="Ziraat Katılım Bankası">
-                </div>
-
-                <div class="form-group">
-                    <label>Hesap Adı</label>
-                    <input type="text" id="bankAccountName" placeholder="Firma Adı">
-                </div>
-
-                <div class="form-group">
-                    <label>IBAN (TL)</label>
-                    <input type="text" id="bankIBANTL" placeholder="TR00 0000 0000 0000 0000 0000 00">
-                </div>
-
-                <div class="form-group">
-                    <label>IBAN (USD)</label>
-                    <input type="text" id="bankIBANUSD" placeholder="TR00 0000 0000 0000 0000 0000 00">
-                </div>
-
-                <div class="form-group">
-                    <label>IBAN (EUR)</label>
-                    <input type="text" id="bankIBANEUR" placeholder="TR00 0000 0000 0000 0000 0000 00">
-                </div>
+            <h3 style="margin-top: 30px; margin-bottom: 15px;">Banka Hesapları</h3>
+            <div id="bankAccountsList" style="margin-bottom: 20px;">
+                <!-- Bank accounts will be rendered here -->
+            </div>
+            <button type="button" class="btn btn-secondary" onclick="App.addBankAccount()" style="margin-bottom: 20px;">➕ Yeni Banka Hesabı Ekle</button>
+            
+            <!-- Legacy single bank fields (hidden, for backward compatibility) -->
+            <div style="display: none;">
+                <input type="text" id="bankName">
+                <input type="text" id="bankAccountName">
+                <input type="text" id="bankIBANTL">
+                <input type="text" id="bankIBANUSD">
+                <input type="text" id="bankIBANEUR">
             </div>
 
             <h3 style="margin-top: 30px; margin-bottom: 15px;">Varsayılan Ayarlar</h3>
@@ -980,10 +1131,6 @@
                     <input type="number" id="defaultVAT" value="20" min="0" max="100" step="1">
                 </div>
 
-                <div class="form-group">
-                    <label>Teklif Geçerlilik Süresi (Gün)</label>
-                    <input type="number" id="defaultValidityDays" value="10" min="1" max="365">
-                </div>
             </div>
 
             <div class="form-group">
@@ -1136,6 +1283,16 @@
         <div id="yeni-teklif" class="section">
             <h2 class="section-title">Yeni Teklif Oluştur</h2>
 
+            <!-- Sticky Action Buttons -->
+            <div class="sticky-actions">
+                <div class="btn-group">
+                    <button class="btn btn-success" onclick="App.saveQuote('draft')" data-tooltip="Teklifi taslak olarak kaydet">💾 Taslak Olarak Kaydet</button>
+                    <button class="btn btn-primary" onclick="App.saveQuote('sent')" data-tooltip="Teklifi kaydet ve gönderildi olarak işaretle">✉️ Kaydet ve Gönderildi İşaretle</button>
+                    <button class="btn btn-secondary" onclick="App.previewQuote()" data-tooltip="Teklif önizlemesini göster">👁️ Önizleme & Yazdır</button>
+                    <button class="btn btn-danger" onclick="App.clearQuote()" data-tooltip="Formu temizle">🗑️ Formu Temizle</button>
+                </div>
+            </div>
+
             <h3 style="margin-top: 20px; margin-bottom: 15px;">Teklif Bilgileri</h3>
             <div class="form-grid">
                 <div class="form-group">
@@ -1165,6 +1322,10 @@
             </div>
 
             <h3 style="margin-top: 30px; margin-bottom: 15px;">Müşteri Bilgileri</h3>
+            <div style="margin-bottom: 15px;">
+                <button type="button" class="btn btn-secondary" onclick="App.showCustomerSelectModal()">📋 Mevcut Müşterilerden Seç</button>
+                <button type="button" class="btn btn-secondary" onclick="App.showCustomerModal()">➕ Yeni Cari Kart Oluştur</button>
+            </div>
             <div class="form-grid">
                 <div class="form-group">
                     <label>Firma Adı *</label>
@@ -1237,8 +1398,7 @@
                         <span id="quoteDiscount">0,00 ₺</span>
                     </div>
                     <div class="quote-totals-row" id="vatRow">
-                        <span>KDV:</span>
-                        <span id="quoteVAT">0,00 ₺</span>
+                        <span id="quoteVAT">KDV (0%)<br>0,00 ₺</span>
                     </div>
                     <div class="quote-totals-row">
                         <span>Toplam:</span>
@@ -1262,6 +1422,7 @@
                             <th style="width: 80px;">Birim</th>
                             <th style="width: 120px;">Birim Fiyat</th>
                             <th style="width: 80px;">Para Birimi</th>
+                            <th style="width: 200px;">Açıklamalar & Notlar</th>
                             <th style="width: 100px;">İşlem</th>
                         </tr>
                     </thead>
@@ -1273,8 +1434,9 @@
 
             <h3 style="margin-top: 30px; margin-bottom: 15px;">Açıklamalar & Notlar</h3>
             <div class="form-group">
-                <label>Açıklamalar (Her satır bir madde olarak görünür)</label>
-                <textarea id="quoteExplanations" rows="6" placeholder="- Anahtar teslim şekilde fiyatlandırma yapılmıştır.&#10;- KDV oranı belirtildiği şekilde hesaplanmıştır.&#10;- Toplam bedelin %50'si iş başlangıcında avans olarak talep edilecektir."></textarea>
+                <label>Açıklamalar (Bold, italik formatlama yapabilirsiniz)</label>
+                <div id="quoteExplanationsEditor" style="height: 200px; margin-bottom: 10px;"></div>
+                <textarea id="quoteExplanations" style="display: none;"></textarea>
             </div>
 
             <div class="btn-group">
@@ -1291,7 +1453,7 @@
                     <!-- Quote preview will be rendered here -->
                 </div>
                 <div class="btn-group">
-                    <button class="btn btn-primary" onclick="window.print()">🖨️ Yazdır / PDF'e Aktar</button>
+                    <button class="btn btn-primary" onclick="App.printInNewWindow()">🖨️ Yazdır / PDF'e Aktar</button>
                     <button class="btn btn-secondary" onclick="document.getElementById('quotePreviewSection').classList.add('hidden')">✖️ Önizlemeyi Kapat</button>
                 </div>
             </div>
@@ -1324,6 +1486,7 @@
                         <tr>
                             <th>Teklif No</th>
                             <th>Tarih</th>
+                            <th>Teklif Başlığı</th>
                             <th>Müşteri</th>
                             <th>Toplam Tutar</th>
                             <th>Durum</th>
@@ -1367,6 +1530,7 @@
                         <option value="Hizmet">Hizmet</option>
                         <option value="Malzeme">Malzeme</option>
                         <option value="Ekipman">Ekipman</option>
+                        <option value="Makine">Makine</option>
                         <option value="Diğer">Diğer</option>
                     </select>
                 </div>
@@ -1392,7 +1556,79 @@
                 </div>
             </div>
 
-            <div class="form-group">
+            <!-- Machine-specific fields (shown only when category is "Makine") -->
+            <div id="machineFields" style="display: none; margin-top: 20px; padding: 15px; background: #f9fafb; border-radius: 6px; border: 1px solid var(--border-color);">
+                <h4 style="margin-bottom: 15px; color: var(--primary-color);">Makine Teknik Özellikleri</h4>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Motor Gücü</label>
+                        <input type="text" id="productMotorPower" placeholder="2.2 kW">
+                    </div>
+                    <div class="form-group">
+                        <label>Hız Aralığı</label>
+                        <input type="text" id="productSpeedRange" placeholder="0-6000 rpm">
+                    </div>
+                    <div class="form-group">
+                        <label>Batch Kapasitesi</label>
+                        <input type="text" id="productBatchCapacity" placeholder="20 Litre">
+                    </div>
+                    <div class="form-group">
+                        <label>Gerilim</label>
+                        <input type="text" id="productVoltage" placeholder="380 Volt">
+                    </div>
+                    <div class="form-group">
+                        <label>Frekans</label>
+                        <input type="text" id="productFrequency" placeholder="50-60 Hz">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Product Images and Technical Drawing -->
+            <div style="margin-top: 20px; padding: 15px; background: #f9fafb; border-radius: 6px; border: 1px solid var(--border-color);">
+                <h4 style="margin-bottom: 15px; color: var(--primary-color);">Görsel ve Teknik Çizim</h4>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Ürün Görseli</label>
+                        <input type="file" id="productImage" accept="image/*" onchange="App.handleProductImageUpload(event)">
+                        <div id="productImagePreview" style="margin-top: 10px; display: none;">
+                            <img id="productImagePreviewImg" style="max-width: 200px; max-height: 200px; border: 1px solid var(--border-color); border-radius: 4px; padding: 5px;">
+                            <button type="button" class="btn btn-small btn-danger" onclick="App.removeProductImage()" style="margin-left: 10px;">🗑️ Kaldır</button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Teknik Çizim (Ölçüler)</label>
+                        <input type="file" id="productTechnicalDrawing" accept="image/*" onchange="App.handleTechnicalDrawingUpload(event)">
+                        <div id="technicalDrawingPreview" style="margin-top: 10px; display: none;">
+                            <img id="technicalDrawingPreviewImg" style="max-width: 200px; max-height: 200px; border: 1px solid var(--border-color); border-radius: 4px; padding: 5px;">
+                            <button type="button" class="btn btn-small btn-danger" onclick="App.removeTechnicalDrawing()" style="margin-left: 10px;">🗑️ Kaldır</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Cost and Pricing -->
+            <div style="margin-top: 20px; padding: 15px; background: #f9fafb; border-radius: 6px; border: 1px solid var(--border-color);">
+                <h4 style="margin-bottom: 15px; color: var(--primary-color);">Maliyet ve Fiyatlandırma</h4>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Birim Maliyet</label>
+                        <input type="number" id="productUnitCost" step="0.01" min="0" placeholder="0.00">
+                        <small style="color: var(--text-light);">Ürünün birim maliyeti</small>
+                    </div>
+                    <div class="form-group">
+                        <label>Hedef Satış Bedeli</label>
+                        <input type="number" id="productTargetPrice" step="0.01" min="0" placeholder="0.00">
+                        <small style="color: var(--text-light);">Hedeflenen satış fiyatı</small>
+                    </div>
+                    <div class="form-group">
+                        <label>Kar Marjı (%)</label>
+                        <input type="text" id="productProfitMargin" readonly style="background: #f0f0f0;">
+                        <small style="color: var(--text-light);">Otomatik hesaplanır</small>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group" style="margin-top: 20px;">
                 <label>Detaylı Açıklama / Alt Kalemler (Her satır bir madde olacak)</label>
                 <textarea id="productDescription" rows="6" placeholder="• Alt detay 1&#10;• Alt detay 2&#10;• Alt detay 3"></textarea>
             </div>
@@ -1402,6 +1638,85 @@
             <div class="btn-group">
                 <button class="btn btn-primary" onclick="App.saveProduct()">💾 Kaydet</button>
                 <button class="btn btn-secondary" onclick="App.closeProductModal()">✖️ İptal</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==============================================
+         MODAL: MÜŞTERİ SEÇME (CUSTOMER SELECT)
+         ============================================== -->
+    <div id="customerSelectModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Müşteri Seçin</h2>
+                <button class="modal-close" onclick="App.closeCustomerSelectModal()">&times;</button>
+            </div>
+
+            <div class="search-filter-bar">
+                <input type="text" class="search-input" id="customerSelectSearch" placeholder="🔍 Müşteri ara...">
+            </div>
+
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Firma Adı</th>
+                            <th>Yetkili Kişi</th>
+                            <th>Telefon</th>
+                            <th>E-posta</th>
+                            <th>İşlem</th>
+                        </tr>
+                    </thead>
+                    <tbody id="customerSelectTableBody">
+                        <!-- Customers will be rendered here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==============================================
+         MODAL: YENİ MÜŞTERİ EKLEME (NEW CUSTOMER)
+         ============================================== -->
+    <div id="customerModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="customerModalTitle">Yeni Müşteri Ekle</h2>
+                <button class="modal-close" onclick="App.closeCustomerModal()">&times;</button>
+            </div>
+
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Firma Adı *</label>
+                    <input type="text" id="newCustomerCompany" placeholder="XYZ Ltd. Şti.">
+                </div>
+
+                <div class="form-group">
+                    <label>Yetkili Kişi</label>
+                    <input type="text" id="newCustomerContact" placeholder="Ahmet Yılmaz">
+                </div>
+
+                <div class="form-group">
+                    <label>Telefon</label>
+                    <input type="text" id="newCustomerPhone" placeholder="+90 212 987 65 43">
+                </div>
+
+                <div class="form-group">
+                    <label>E-posta</label>
+                    <input type="email" id="newCustomerEmail" placeholder="ahmet@xyz.com">
+                </div>
+
+                <div class="form-group" style="grid-column: 1 / -1;">
+                    <label>Adres</label>
+                    <textarea id="newCustomerAddress" rows="3" placeholder="Müşteri adresi..."></textarea>
+                </div>
+            </div>
+
+            <input type="hidden" id="customerEditId">
+
+            <div class="btn-group">
+                <button class="btn btn-primary" onclick="App.saveCustomer()">💾 Kaydet</button>
+                <button class="btn btn-secondary" onclick="App.closeCustomerModal()">✖️ İptal</button>
             </div>
         </div>
     </div>
@@ -1500,6 +1815,34 @@
                 document.getElementById('companyLogo').addEventListener('change', (e) => this.handleLogoUpload(e));
                 document.getElementById('showDiscountColumn').addEventListener('change', () => this.calculateTotals());
                 document.getElementById('showVATColumn').addEventListener('change', () => this.calculateTotals());
+                
+                // Initialize Quill editor for explanations
+                this.initQuillEditor();
+            },
+            
+            initQuillEditor() {
+                if (typeof Quill !== 'undefined') {
+                    const quillEditor = new Quill('#quoteExplanationsEditor', {
+                        theme: 'snow',
+                        modules: {
+                            toolbar: [
+                                ['bold', 'italic', 'underline'],
+                                [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                                ['clean']
+                            ]
+                        },
+                        placeholder: 'Açıklamalarınızı buraya yazın. Bold, italik ve liste formatlaması yapabilirsiniz...'
+                    });
+                    
+                    // Sync Quill content to hidden textarea
+                    quillEditor.on('text-change', () => {
+                        const content = quillEditor.root.innerHTML;
+                        document.getElementById('quoteExplanations').value = content;
+                    });
+                    
+                    // Store editor reference
+                    this.quillEditor = quillEditor;
+                }
             },
 
             // ==============================================
@@ -1571,6 +1914,20 @@
             // COMPANY SETTINGS
             // ==============================================
             saveCompanySettings() {
+                // Collect bank accounts
+                const bankAccounts = [];
+                const bankAccountElements = document.querySelectorAll('.bank-account-item');
+                bankAccountElements.forEach(item => {
+                    const accountId = item.dataset.accountId;
+                    bankAccounts.push({
+                        id: accountId,
+                        bankName: document.getElementById(`bankName_${accountId}`).value,
+                        accountName: document.getElementById(`bankAccountName_${accountId}`).value,
+                        currency: document.getElementById(`bankCurrency_${accountId}`).value,
+                        iban: document.getElementById(`bankIBAN_${accountId}`).value
+                    });
+                });
+                
                 const settings = {
                     name: document.getElementById('companyName').value,
                     tagline: document.getElementById('companyTagline').value,
@@ -1581,14 +1938,15 @@
                     taxOffice: document.getElementById('companyTaxOffice').value,
                     taxNumber: document.getElementById('companyTaxNumber').value,
                     logo: this.loadFromStorage('companyLogo', ''),
-                    bankName: document.getElementById('bankName').value,
-                    bankAccountName: document.getElementById('bankAccountName').value,
-                    bankIBANTL: document.getElementById('bankIBANTL').value,
-                    bankIBANUSD: document.getElementById('bankIBANUSD').value,
-                    bankIBANEUR: document.getElementById('bankIBANEUR').value,
+                    bankAccounts: bankAccounts,
+                    // Legacy fields for backward compatibility
+                    bankName: bankAccounts.length > 0 ? bankAccounts[0].bankName : '',
+                    bankAccountName: bankAccounts.length > 0 ? bankAccounts[0].accountName : '',
+                    bankIBANTL: bankAccounts.find(acc => acc.currency === 'TL')?.iban || '',
+                    bankIBANUSD: bankAccounts.find(acc => acc.currency === 'USD')?.iban || '',
+                    bankIBANEUR: bankAccounts.find(acc => acc.currency === 'EUR')?.iban || '',
                     defaultCurrency: document.getElementById('defaultCurrency').value,
                     defaultVAT: parseFloat(document.getElementById('defaultVAT').value),
-                    defaultValidityDays: parseInt(document.getElementById('defaultValidityDays').value),
                     defaultNotes: document.getElementById('companyDefaultNotes').value
                 };
 
@@ -1621,7 +1979,6 @@
                     document.getElementById('bankIBANEUR').value = settings.bankIBANEUR || '';
                     document.getElementById('defaultCurrency').value = settings.defaultCurrency || 'TL';
                     document.getElementById('defaultVAT').value = settings.defaultVAT || 20;
-                    document.getElementById('defaultValidityDays').value = settings.defaultValidityDays || 10;
                     document.getElementById('companyDefaultNotes').value = settings.defaultNotes || '';
 
                     const logo = this.loadFromStorage('companyLogo');
@@ -1646,7 +2003,6 @@
                     document.getElementById('bankIBANUSD').value = 'TR86 0020 9000 0188 0596 0000 02';
                     document.getElementById('defaultCurrency').value = 'USD';
                     document.getElementById('defaultVAT').value = 20;
-                    document.getElementById('defaultValidityDays').value = 10;
                     document.getElementById('companyDefaultNotes').value = '- Anahtar teslim şekilde fiyatlandırma yapılmıştır.\n- Toplam bedelin %50\'si iş başlangıcında avans olarak talep edilecektir.\n- Bedel, fatura kesiminden sonra 10 gün içinde banka havalesi yoluyla ödenecektir.';
 
                     this.showAlert('Varsayılan ayarlar yüklendi. Kaydetmeyi unutmayın!', 'success');
@@ -1753,6 +2109,10 @@
             showProductModal(productId = null) {
                 document.getElementById('productModal').classList.add('active');
 
+                // Add event listener for category change
+                const categorySelect = document.getElementById('productCategory');
+                categorySelect.onchange = () => this.toggleMachineFields();
+
                 if (productId) {
                     const products = this.loadFromStorage('products', []);
                     const product = products.find(p => p.id === productId);
@@ -1767,6 +2127,30 @@
                         document.getElementById('productCurrency').value = product.currency;
                         document.getElementById('productDescription').value = product.description;
                         document.getElementById('productEditId').value = productId;
+                        
+                        // Load machine-specific fields
+                        if (product.category === 'Makine' && product.machineSpecs) {
+                            document.getElementById('productMotorPower').value = product.machineSpecs.motorPower || '';
+                            document.getElementById('productSpeedRange').value = product.machineSpecs.speedRange || '';
+                            document.getElementById('productBatchCapacity').value = product.machineSpecs.batchCapacity || '';
+                            document.getElementById('productVoltage').value = product.machineSpecs.voltage || '';
+                            document.getElementById('productFrequency').value = product.machineSpecs.frequency || '';
+                        }
+                        
+                        // Load product images
+                        if (product.image) {
+                            document.getElementById('productImagePreview').style.display = 'block';
+                            document.getElementById('productImagePreviewImg').src = product.image;
+                        }
+                        if (product.technicalDrawing) {
+                            document.getElementById('technicalDrawingPreview').style.display = 'block';
+                            document.getElementById('technicalDrawingPreviewImg').src = product.technicalDrawing;
+                        }
+                        
+                        // Load cost and pricing
+                        document.getElementById('productUnitCost').value = product.unitCost || '';
+                        document.getElementById('productTargetPrice').value = product.targetPrice || '';
+                        this.calculateProductProfitMargin();
                     }
                 } else {
                     document.getElementById('productModalTitle').textContent = 'Yeni Ürün Ekle';
@@ -1780,6 +2164,25 @@
                     document.getElementById('productCurrency').value = companySettings.defaultCurrency || 'TL';
                     document.getElementById('productDescription').value = '';
                     document.getElementById('productEditId').value = '';
+                    
+                    // Clear machine fields
+                    document.getElementById('productMotorPower').value = '';
+                    document.getElementById('productSpeedRange').value = '';
+                    document.getElementById('productBatchCapacity').value = '';
+                    document.getElementById('productVoltage').value = '';
+                    document.getElementById('productFrequency').value = '';
+                }
+                
+                this.toggleMachineFields();
+            },
+            
+            toggleMachineFields() {
+                const category = document.getElementById('productCategory').value;
+                const machineFields = document.getElementById('machineFields');
+                if (category === 'Makine') {
+                    machineFields.style.display = 'block';
+                } else {
+                    machineFields.style.display = 'none';
                 }
             },
 
@@ -1795,16 +2198,47 @@
                     return;
                 }
 
+                const category = document.getElementById('productCategory').value;
                 const product = {
                     id: document.getElementById('productEditId').value || Date.now().toString(),
                     code: document.getElementById('productCode').value,
                     name: name,
-                    category: document.getElementById('productCategory').value,
+                    category: category,
                     unit: document.getElementById('productUnit').value,
                     price: parseFloat(document.getElementById('productPrice').value) || 0,
                     currency: document.getElementById('productCurrency').value,
                     description: document.getElementById('productDescription').value
                 };
+                
+                // Add machine-specific specs if category is "Makine"
+                if (category === 'Makine') {
+                    product.machineSpecs = {
+                        motorPower: document.getElementById('productMotorPower').value.trim(),
+                        speedRange: document.getElementById('productSpeedRange').value.trim(),
+                        batchCapacity: document.getElementById('productBatchCapacity').value.trim(),
+                        voltage: document.getElementById('productVoltage').value.trim(),
+                        frequency: document.getElementById('productFrequency').value.trim()
+                    };
+                }
+                
+                // Add product images
+                const imagePreview = document.getElementById('productImagePreviewImg');
+                if (imagePreview && imagePreview.src && !imagePreview.src.includes('data:image')) {
+                    product.image = imagePreview.src;
+                } else if (imagePreview && imagePreview.src) {
+                    product.image = imagePreview.src; // Store as base64
+                }
+                
+                const technicalDrawingPreview = document.getElementById('technicalDrawingPreviewImg');
+                if (technicalDrawingPreview && technicalDrawingPreview.src && !technicalDrawingPreview.src.includes('data:image')) {
+                    product.technicalDrawing = technicalDrawingPreview.src;
+                } else if (technicalDrawingPreview && technicalDrawingPreview.src) {
+                    product.technicalDrawing = technicalDrawingPreview.src; // Store as base64
+                }
+                
+                // Add cost and pricing
+                product.unitCost = parseFloat(document.getElementById('productUnitCost').value) || 0;
+                product.targetPrice = parseFloat(document.getElementById('productTargetPrice').value) || 0;
 
                 let products = this.loadFromStorage('products', []);
                 const existingIndex = products.findIndex(p => p.id === product.id);
@@ -1841,8 +2275,19 @@
                 }
             },
 
-            deleteProduct(productId) {
-                if (!confirm('Bu ürünü silmek istediğinizden emin misiniz?')) {
+            async deleteProduct(productId) {
+                const result = await Swal.fire({
+                    title: 'Emin misiniz?',
+                    text: 'Bu ürünü silmek istediğinizden emin misiniz?',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#dc2626',
+                    cancelButtonColor: '#64748b',
+                    confirmButtonText: 'Evet, Sil',
+                    cancelButtonText: 'İptal'
+                });
+                
+                if (!result.isConfirmed) {
                     return;
                 }
 
@@ -1895,8 +2340,8 @@
                         <td>${this.getCurrencySymbol(product.currency)}</td>
                         <td>
                             <button class="btn btn-small btn-secondary" onclick="App.showProductModal('${product.id}')">✏️ Düzenle</button>
-                            <button class="btn btn-small btn-secondary" onclick="App.duplicateProduct('${product.id}')">📋 Kopyala</button>
-                            <button class="btn btn-small btn-danger" onclick="App.deleteProduct('${product.id}')">🗑️</button>
+                            <button class="btn btn-small btn-secondary" onclick="App.duplicateProduct('${product.id}')" data-tooltip="Ürünü kopyala">📋 Kopyala</button>
+                            <button class="btn btn-small btn-danger" onclick="App.deleteProduct('${product.id}')" data-tooltip="Ürünü sil">🗑️</button>
                         </td>
                     </tr>
                 `).join('');
@@ -1913,6 +2358,168 @@
 
             closeProductSelectModal() {
                 document.getElementById('productSelectModal').classList.remove('active');
+            },
+            
+            // ==============================================
+            // CUSTOMER MANAGEMENT
+            // ==============================================
+            showCustomerSelectModal() {
+                document.getElementById('customerSelectModal').classList.add('active');
+                this.renderCustomerSelectTable();
+            },
+            
+            closeCustomerSelectModal() {
+                document.getElementById('customerSelectModal').classList.remove('active');
+            },
+            
+            renderCustomerSelectTable() {
+                const tbody = document.getElementById('customerSelectTableBody');
+                let customers = this.loadFromStorage('customers', []);
+                
+                const searchTerm = document.getElementById('customerSelectSearch')?.value.toLowerCase() || '';
+                if (searchTerm) {
+                    customers = customers.filter(customer => 
+                        customer.company.toLowerCase().includes(searchTerm) ||
+                        (customer.contact && customer.contact.toLowerCase().includes(searchTerm)) ||
+                        (customer.email && customer.email.toLowerCase().includes(searchTerm))
+                    );
+                }
+                
+                if (customers.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 30px; color: var(--text-light);">Müşteri bulunamadı.</td></tr>';
+                    return;
+                }
+                
+                tbody.innerHTML = customers.map(customer => `
+                    <tr>
+                        <td><strong>${this.escapeHtml(customer.company)}</strong></td>
+                        <td>${this.escapeHtml(customer.contact || '-')}</td>
+                        <td>${this.escapeHtml(customer.phone || '-')}</td>
+                        <td>${this.escapeHtml(customer.email || '-')}</td>
+                        <td>
+                            <button class="btn btn-small btn-primary" onclick="App.selectCustomer('${customer.id}')">Seç</button>
+                            <button class="btn btn-small btn-secondary" onclick="App.editCustomer('${customer.id}')">✏️</button>
+                            <button class="btn btn-small btn-danger" onclick="App.deleteCustomer('${customer.id}')">🗑️</button>
+                        </td>
+                    </tr>
+                `).join('');
+            },
+            
+            selectCustomer(customerId) {
+                const customers = this.loadFromStorage('customers', []);
+                const customer = customers.find(c => c.id === customerId);
+                
+                if (customer) {
+                    document.getElementById('customerCompany').value = customer.company;
+                    document.getElementById('customerContact').value = customer.contact || '';
+                    document.getElementById('customerPhone').value = customer.phone || '';
+                    document.getElementById('customerEmail').value = customer.email || '';
+                    document.getElementById('customerAddress').value = customer.address || '';
+                    if (customer.deliveryAddress) {
+                        document.getElementById('useDeliveryAddress').checked = true;
+                        document.getElementById('deliveryAddress').value = customer.deliveryAddress;
+                        document.getElementById('deliveryAddressGroup').style.display = 'block';
+                    }
+                    this.closeCustomerSelectModal();
+                    this.showAlert('Müşteri bilgileri yüklendi.', 'success');
+                }
+            },
+            
+            showCustomerModal(customerId = null) {
+                document.getElementById('customerModal').classList.add('active');
+                
+                if (customerId) {
+                    const customers = this.loadFromStorage('customers', []);
+                    const customer = customers.find(c => c.id === customerId);
+                    
+                    if (customer) {
+                        document.getElementById('customerModalTitle').textContent = 'Müşteriyi Düzenle';
+                        document.getElementById('newCustomerCompany').value = customer.company;
+                        document.getElementById('newCustomerContact').value = customer.contact || '';
+                        document.getElementById('newCustomerPhone').value = customer.phone || '';
+                        document.getElementById('newCustomerEmail').value = customer.email || '';
+                        document.getElementById('newCustomerAddress').value = customer.address || '';
+                        document.getElementById('customerEditId').value = customerId;
+                    }
+                } else {
+                    document.getElementById('customerModalTitle').textContent = 'Yeni Müşteri Ekle';
+                    document.getElementById('newCustomerCompany').value = '';
+                    document.getElementById('newCustomerContact').value = '';
+                    document.getElementById('newCustomerPhone').value = '';
+                    document.getElementById('newCustomerEmail').value = '';
+                    document.getElementById('newCustomerAddress').value = '';
+                    document.getElementById('customerEditId').value = '';
+                }
+            },
+            
+            closeCustomerModal() {
+                document.getElementById('customerModal').classList.remove('active');
+            },
+            
+            saveCustomer() {
+                const company = document.getElementById('newCustomerCompany').value.trim();
+                
+                if (!company) {
+                    this.showAlert('Lütfen firma adını girin!', 'error');
+                    return;
+                }
+                
+                const customers = this.loadFromStorage('customers', []);
+                const editId = document.getElementById('customerEditId').value;
+                
+                const customer = {
+                    id: editId || Date.now().toString(),
+                    company: company,
+                    contact: document.getElementById('newCustomerContact').value.trim(),
+                    phone: document.getElementById('newCustomerPhone').value.trim(),
+                    email: document.getElementById('newCustomerEmail').value.trim(),
+                    address: document.getElementById('newCustomerAddress').value.trim(),
+                    createdAt: editId ? customers.find(c => c.id === editId)?.createdAt : new Date().toISOString(),
+                    updatedAt: new Date().toISOString()
+                };
+                
+                if (editId) {
+                    const index = customers.findIndex(c => c.id === editId);
+                    if (index !== -1) {
+                        customers[index] = customer;
+                    }
+                } else {
+                    customers.push(customer);
+                }
+                
+                this.saveToStorage('customers', customers);
+                this.closeCustomerModal();
+                this.showAlert('Müşteri kaydedildi!', 'success');
+                
+                // If customer select modal is open, refresh it
+                if (document.getElementById('customerSelectModal').classList.contains('active')) {
+                    this.renderCustomerSelectTable();
+                }
+            },
+            
+            editCustomer(customerId) {
+                this.showCustomerModal(customerId);
+            },
+            
+            async deleteCustomer(customerId) {
+                const result = await Swal.fire({
+                    title: 'Emin misiniz?',
+                    text: 'Bu müşteri silinecek!',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#dc2626',
+                    cancelButtonColor: '#64748b',
+                    confirmButtonText: 'Evet, Sil',
+                    cancelButtonText: 'İptal'
+                });
+                
+                if (result.isConfirmed) {
+                    const customers = this.loadFromStorage('customers', []);
+                    const filtered = customers.filter(c => c.id !== customerId);
+                    this.saveToStorage('customers', filtered);
+                    this.renderCustomerSelectTable();
+                    this.showAlert('Müşteri silindi!', 'success');
+                }
             },
 
             renderProductSelectTable() {
@@ -1993,15 +2600,22 @@
             // ==============================================
             // QUOTE CREATION
             // ==============================================
-            generateQuoteNumber() {
+            generateQuoteNumber(shouldIncrement = false) {
                 const year = new Date().getFullYear();
                 let counter = this.loadFromStorage('quoteCounter', 0);
-                counter++;
+                
+                if (shouldIncrement) {
+                    counter++;
+                    this.saveToStorage('quoteCounter', counter);
+                } else {
+                    // If no number exists, generate one but don't save yet
+                    if (counter === 0) {
+                        counter = 1;
+                    }
+                }
 
                 const quoteNumber = `TEK-${year}-${String(counter).padStart(3, '0')}`;
                 document.getElementById('quoteNumber').value = quoteNumber;
-
-                this.saveToStorage('quoteCounter', counter);
             },
 
             addEmptyLineItem() {
@@ -2031,13 +2645,29 @@
                     quantity: 1,
                     unit: 'Adet',
                     price: 0,
-                    currency: companySettings.defaultCurrency || 'TL'
+                    currency: companySettings.defaultCurrency || 'TL',
+                    notes: ''
                 });
 
                 this.renderQuoteOptions();
             },
 
-            removeLineItem(itemId) {
+            async removeLineItem(itemId) {
+                const result = await Swal.fire({
+                    title: 'Emin misiniz?',
+                    text: 'Bu kalemi listeden kaldırmak istediğinizden emin misiniz?',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#dc2626',
+                    cancelButtonColor: '#64748b',
+                    confirmButtonText: 'Evet, Kaldır',
+                    cancelButtonText: 'İptal'
+                });
+                
+                if (!result.isConfirmed) {
+                    return;
+                }
+                
                 this.currentQuote.items = this.currentQuote.items.filter(item => item.id !== itemId);
                 this.renderQuoteItems();
             },
@@ -2079,7 +2709,22 @@
                 this.showAlert(`✅ "${item.name}" ürün kütüphanesine eklendi!`);
             },
 
-            removeOptionItem(itemId) {
+            async removeOptionItem(itemId) {
+                const result = await Swal.fire({
+                    title: 'Emin misiniz?',
+                    text: 'Bu opsiyonu listeden kaldırmak istediğinizden emin misiniz?',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#dc2626',
+                    cancelButtonColor: '#64748b',
+                    confirmButtonText: 'Evet, Kaldır',
+                    cancelButtonText: 'İptal'
+                });
+                
+                if (!result.isConfirmed) {
+                    return;
+                }
+                
                 this.currentQuote.options = this.currentQuote.options.filter(item => item.id !== itemId);
                 this.renderQuoteOptions();
             },
@@ -2177,8 +2822,8 @@
                         </td>
                         <td class="text-right" style="font-weight: bold;">${this.formatNumber(netTotal)} ${this.getCurrencySymbol(item.currency)}</td>
                         <td>
-                            <button class="btn btn-small btn-success" onclick="App.saveLineItemToLibrary('${item.id}')" title="Bu ürünü kütüphaneye kaydet">📚</button>
-                            <button class="btn btn-small btn-danger" onclick="App.removeLineItem('${item.id}')">🗑️</button>
+                            <button class="btn btn-small btn-success" onclick="App.saveLineItemToLibrary('${item.id}')" data-tooltip="Bu ürünü kütüphaneye kaydet">📚</button>
+                            <button class="btn btn-small btn-danger" onclick="App.removeLineItem('${item.id}')" data-tooltip="Kalemi listeden kaldır">🗑️</button>
                         </td>
                     </tr>
                 `;
@@ -2191,7 +2836,7 @@
                 const tbody = document.getElementById('quoteOptionsTableBody');
 
                 if (this.currentQuote.options.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 20px; color: var(--text-light);">Opsiyon eklenmedi.</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 20px; color: var(--text-light);">Opsiyon eklenmedi.</td></tr>';
                     return;
                 }
 
@@ -2211,8 +2856,11 @@
                             </select>
                         </td>
                         <td>
-                            <button class="btn btn-small btn-success" onclick="App.saveOptionToLibrary('${item.id}')" title="Bu opsiyonu kütüphaneye kaydet">📚</button>
-                            <button class="btn btn-small btn-danger" onclick="App.removeOptionItem('${item.id}')">🗑️</button>
+                            <textarea onchange="App.updateOptionItem('${item.id}', 'notes', this.value)" style="width: 100%; padding: 5px; border: 1px solid var(--border-color); border-radius: 4px; min-height: 60px; font-size: 12px;" placeholder="Opsiyona özel açıklamalar ve notlar...">${this.escapeHtml(item.notes || '')}</textarea>
+                        </td>
+                        <td>
+                            <button class="btn btn-small btn-success" onclick="App.saveOptionToLibrary('${item.id}')" data-tooltip="Bu opsiyonu kütüphaneye kaydet">📚</button>
+                            <button class="btn btn-small btn-danger" onclick="App.removeOptionItem('${item.id}')" data-tooltip="Opsiyonu listeden kaldır">🗑️</button>
                         </td>
                     </tr>
                 `).join('');
@@ -2241,7 +2889,7 @@
 
                 document.getElementById('quoteSubtotal').textContent = `${this.formatNumber(subtotal)} ${currencySymbol}`;
                 document.getElementById('quoteDiscount').textContent = `${this.formatNumber(totalDiscount)} ${currencySymbol}`;
-                document.getElementById('quoteVAT').textContent = `${this.formatNumber(totalVAT)} ${currencySymbol} (%${vatRate})`;
+                document.getElementById('quoteVAT').innerHTML = `KDV (${vatRate}%)<br>${this.formatNumber(totalVAT)} ${currencySymbol}`;
                 document.getElementById('quoteGrandTotal').textContent = `${this.formatNumber(grandTotal)} ${currencySymbol}`;
 
                 // Show/hide discount row
@@ -2301,9 +2949,20 @@
                 const existingIndex = quotes.findIndex(q => q.id === quote.id);
 
                 if (existingIndex >= 0) {
+                    // Existing quote - just update, don't increment counter
                     quotes[existingIndex] = quote;
                     this.showAlert('✅ Teklif güncellendi!');
                 } else {
+                    // New quote - increment counter only if status is 'sent'
+                    if (status === 'sent') {
+                        const year = new Date().getFullYear();
+                        let counter = this.loadFromStorage('quoteCounter', 0);
+                        counter++;
+                        this.saveToStorage('quoteCounter', counter);
+                        const quoteNumber = `TEK-${year}-${String(counter).padStart(3, '0')}`;
+                        quote.number = quoteNumber;
+                        document.getElementById('quoteNumber').value = quoteNumber;
+                    }
                     quotes.push(quote);
                     this.showAlert('✅ Teklif kaydedildi!');
                 }
@@ -2312,8 +2971,19 @@
                 this.currentQuote.id = quote.id;
             },
 
-            clearQuote() {
-                if (!confirm('Formdaki tüm bilgiler silinecek. Emin misiniz?')) {
+            async clearQuote() {
+                const result = await Swal.fire({
+                    title: 'Emin misiniz?',
+                    text: 'Formdaki tüm bilgiler silinecek. Emin misiniz?',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#dc2626',
+                    cancelButtonColor: '#64748b',
+                    confirmButtonText: 'Evet, Temizle',
+                    cancelButtonText: 'İptal'
+                });
+                
+                if (!result.isConfirmed) {
                     return;
                 }
 
@@ -2333,6 +3003,9 @@
                 document.getElementById('customerPhone').value = '';
                 document.getElementById('customerEmail').value = '';
                 document.getElementById('quoteExplanations').value = '';
+                if (this.quillEditor) {
+                    this.quillEditor.root.innerHTML = '';
+                }
                 document.getElementById('showDiscountColumn').checked = false;
                 document.getElementById('showVATColumn').checked = true;
 
@@ -2378,11 +3051,28 @@
                 document.getElementById('quotePrintArea').innerHTML = previewHtml;
                 document.getElementById('quotePreviewSection').classList.remove('hidden');
 
+                // Generate QR Code after HTML is rendered
+                setTimeout(() => {
+                    this.generateQRCode('preview', companySettings.website);
+                }, 100);
+
                 document.getElementById('quotePreviewSection').scrollIntoView({ behavior: 'smooth' });
             },
 
             generateQuoteHTML(quote, companySettings, logo) {
-                const currencySymbol = this.getCurrencySymbol(quote.totals.currency);
+                // Ensure totals exist
+                if (!quote.totals) {
+                    quote.totals = {
+                        subtotal: 0,
+                        totalDiscount: 0,
+                        totalVAT: 0,
+                        grandTotal: 0,
+                        currency: quote.items && quote.items.length > 0 ? quote.items[0].currency : 'TL',
+                        vatRate: companySettings.defaultVAT || 20
+                    };
+                }
+                
+                const currencySymbol = this.getCurrencySymbol(quote.totals.currency || 'TL');
 
                 // Calculate validity date
                 const quoteDate = new Date(quote.date);
@@ -2397,7 +3087,9 @@
                             <div class="pdf-header-text">
                                 <h1>${this.escapeHtml(companySettings.name || 'ŞİRKET ADI')}</h1>
                                 ${companySettings.tagline ? `<div class="tagline">${this.escapeHtml(companySettings.tagline)}</div>` : ''}
+                                ${companySettings.address ? `<div class="pdf-header-address" style="margin-top: 8px; font-size: 9pt; color: var(--text-light);">${this.escapeHtml(companySettings.address)}</div>` : ''}
                             </div>
+                            ${companySettings.website ? `<div id="qrCode-${quote.id || 'preview'}" class="pdf-header-qr" style="width: 60px; height: 60px;"></div>` : ''}
                         </div>
 
                         <!-- Title -->
@@ -2485,12 +3177,12 @@
                                 ` : ''}
                                 ${quote.showVAT ? `
                                 <div class="quote-totals-row">
-                                    <span>KDV (%${quote.totals.vatRate || 0})</span>
+                                    <span>KDV (${quote.totals.vatRate || 0}%)</span>
                                     <span>${this.formatNumber(quote.totals.totalVAT)} ${currencySymbol}</span>
                                 </div>
                                 ` : `
                                 <div class="quote-totals-row">
-                                    <span>KDV (%${quote.totals.vatRate || 0})</span>
+                                    <span>KDV (${quote.totals.vatRate || 0}%)</span>
                                     <span>${this.formatNumber(0)} ${currencySymbol}</span>
                                 </div>
                                 `}
@@ -2519,7 +3211,10 @@
                                     return `
                                         <tr>
                                             <td style="text-align: center;">${String(index + 1).padStart(2, '0')}</td>
-                                            <td>${this.escapeHtml(item.name)}</td>
+                                            <td>
+                                                ${this.escapeHtml(item.name)}
+                                                ${item.notes ? `<div style="margin-top: 5px; font-size: 9pt; color: var(--text-light); font-style: italic;">${this.escapeHtml(item.notes)}</div>` : ''}
+                                            </td>
                                             <td class="text-right">${item.quantity}</td>
                                             <td class="text-right">${this.formatNumber(total)} ${this.getCurrencySymbol(item.currency)}</td>
                                         </tr>
@@ -2530,27 +3225,38 @@
                         ` : ''}
 
                         <!-- Bank Info -->
-                        ${companySettings.bankName ? `
+                        ${(companySettings.bankAccounts && companySettings.bankAccounts.length > 0) || companySettings.bankName ? `
                         <div class="quote-bank-info">
                             <h3>Ödeme Bilgileri</h3>
-                            <div><strong>Banka Adı:</strong> ${this.escapeHtml(companySettings.bankName)}</div>
-                            <div><strong>Hesap Adı:</strong> ${this.escapeHtml(companySettings.bankAccountName || '')}</div>
-                            ${companySettings.bankIBANTL ? `<div><strong>IBAN ₺ :</strong> ${this.escapeHtml(companySettings.bankIBANTL)}</div>` : ''}
-                            ${companySettings.bankIBANUSD ? `<div><strong>IBAN $ :</strong> ${this.escapeHtml(companySettings.bankIBANUSD)}</div>` : ''}
-                            ${companySettings.bankIBANEUR ? `<div><strong>IBAN € :</strong> ${this.escapeHtml(companySettings.bankIBANEUR)}</div>` : ''}
+                            ${companySettings.bankAccounts && companySettings.bankAccounts.length > 0 ? 
+                                companySettings.bankAccounts.map(account => `
+                                    <div style="margin-bottom: 10px; padding: 10px; background: #f9fafb; border-left: 3px solid var(--primary-color);">
+                                        <div><strong>Banka Adı:</strong> ${this.escapeHtml(account.bankName || '')}</div>
+                                        <div><strong>Hesap Adı:</strong> ${this.escapeHtml(account.accountName || '')}</div>
+                                        <div><strong>IBAN (${account.currency}):</strong> ${this.escapeHtml(account.iban || '')}</div>
+                                    </div>
+                                `).join('') :
+                                `
+                                    <div><strong>Banka Adı:</strong> ${this.escapeHtml(companySettings.bankName || '')}</div>
+                                    <div><strong>Hesap Adı:</strong> ${this.escapeHtml(companySettings.bankAccountName || '')}</div>
+                                    ${companySettings.bankIBANTL ? `<div><strong>IBAN ₺ :</strong> ${this.escapeHtml(companySettings.bankIBANTL)}</div>` : ''}
+                                    ${companySettings.bankIBANUSD ? `<div><strong>IBAN $ :</strong> ${this.escapeHtml(companySettings.bankIBANUSD)}</div>` : ''}
+                                    ${companySettings.bankIBANEUR ? `<div><strong>IBAN € :</strong> ${this.escapeHtml(companySettings.bankIBANEUR)}</div>` : ''}
+                                `
+                            }
                         </div>
                         ` : ''}
 
                         <!-- Explanations -->
                         ${quote.explanations ? `
                         <div class="quote-notes-section">
-                            <h3>Açıklamalar:</h3>
-                            <ul>
-                                ${quote.explanations.split('\n').filter(line => line.trim()).map(line =>
-                                    `<li>${this.escapeHtml(line.replace(/^[\-\•\*]\s*/, ''))}</li>`
+                            <div class="quote-notes-header" style="font-size: 14pt; font-weight: bold; margin-bottom: 15px; color: var(--primary-color); border-bottom: 2px solid var(--primary-color); padding-bottom: 5px;">Açıklamalar</div>
+                            <div style="font-size: 10pt; line-height: 1.8;">
+                                ${quote.explanations.includes('<') ? quote.explanations : quote.explanations.split('\n').filter(line => line.trim()).map(line =>
+                                    `<div style="margin: 8px 0;">${this.escapeHtml(line.replace(/^[\-\•\*]\s*/, ''))}</div>`
                                 ).join('')}
-                            </ul>
-                            <div style="margin-top: 10px;"><strong>Teklifimiz ${quote.validityDays} gün süreyle geçerlidir.</strong></div>
+                            </div>
+                            <div style="margin-top: 15px; font-weight: bold;"><strong>Teklifimiz ${quote.validityDays} gün süreyle geçerlidir.</strong></div>
                         </div>
                         ` : ''}
 
@@ -2561,12 +3267,53 @@
                             </div>
                             <div class="pdf-footer-right">
                                 <div>☎ ${this.escapeHtml(companySettings.phone || '')}</div>
-                                <div>🌐 ${this.escapeHtml(companySettings.website || '')}</div>
-                                ${companySettings.email ? `<div>✉ ${this.escapeHtml(companySettings.email)}</div>` : ''}
+                                ${companySettings.website ? `<div>🌐 <a href="${companySettings.website.startsWith('http') ? companySettings.website : 'https://' + companySettings.website}" target="_blank" style="color: inherit; text-decoration: none;">${this.escapeHtml(companySettings.website)}</a></div>` : ''}
+                                ${companySettings.email ? `<div style="font-size: 11pt;">✉️ <a href="mailto:${companySettings.email}" style="color: inherit; text-decoration: none;">${this.escapeHtml(companySettings.email)}</a></div>` : ''}
+                            </div>
+                        </div>
+                        
+                        <!-- Signature and Seal Section -->
+                        <div class="quote-signature-section" style="margin-top: 50px; padding-top: 30px; border-top: 2px solid var(--border-color); page-break-inside: avoid;">
+                            <div style="display: flex; justify-content: space-between; align-items: flex-end;">
+                                <div style="flex: 1;">
+                                    <div style="margin-bottom: 40px; min-height: 80px; border-bottom: 1px solid var(--border-color);">
+                                        <div style="font-weight: bold; margin-bottom: 5px;">Müşteri Onayı</div>
+                                        <div style="font-size: 9pt; color: var(--text-light);">İmza ve Kaşe</div>
+                                    </div>
+                                    <div style="font-size: 9pt; color: var(--text-light);">${this.escapeHtml(quote.customer.company)}</div>
+                                </div>
+                                <div style="flex: 1; text-align: right;">
+                                    <div style="margin-bottom: 40px; min-height: 80px; border-bottom: 1px solid var(--border-color);">
+                                        <div style="font-weight: bold; margin-bottom: 5px;">RZG Mühendislik</div>
+                                        <div style="font-size: 9pt; color: var(--text-light);">İmza ve Kaşe</div>
+                                    </div>
+                                    <div style="font-size: 9pt; color: var(--text-light);">${this.escapeHtml(companySettings.name || '')}</div>
+                                </div>
                             </div>
                         </div>
                     </div>
                 `;
+            },
+            
+            generateQRCode(elementId, url) {
+                if (typeof QRCode === 'undefined' || !url) return;
+                
+                const qrElement = document.getElementById(`qrCode-${elementId}`);
+                if (!qrElement) return;
+                
+                // Clear existing QR code
+                qrElement.innerHTML = '';
+                
+                // Generate QR code
+                const qrUrl = url.startsWith('http') ? url : 'https://' + url;
+                new QRCode(qrElement, {
+                    text: qrUrl,
+                    width: 60,
+                    height: 60,
+                    colorDark: '#1e293b',
+                    colorLight: '#ffffff',
+                    correctLevel: QRCode.CorrectLevel.H
+                });
             },
 
             // ==============================================
@@ -2604,7 +3351,7 @@
                 quotes.sort((a, b) => new Date(b.date) - new Date(a.date));
 
                 if (quotes.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 30px; color: var(--text-light);">Teklif bulunamadı.</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 30px; color: var(--text-light);">Teklif bulunamadı.</td></tr>';
                     return;
                 }
 
@@ -2619,16 +3366,17 @@
 
                     return `
                         <tr>
-                            <td><strong>${this.escapeHtml(quote.number)}</strong></td>
+                            <td><strong>${this.escapeHtml(quote.number || '')}</strong></td>
                             <td>${this.formatDate(quote.date)}</td>
+                            <td>${this.escapeHtml(quote.title || '-')}</td>
                             <td>${this.escapeHtml(quote.customer.company)}</td>
-                            <td class="text-right">${this.formatNumber(quote.totals.grandTotal)} ${this.getCurrencySymbol(quote.totals.currency)}</td>
+                            <td class="text-right">${this.formatNumber((quote.totals && quote.totals.grandTotal) || 0)} ${this.getCurrencySymbol((quote.totals && quote.totals.currency) || 'TL')}</td>
                             <td><span class="status-badge status-${quote.status}">${statusLabels[quote.status]}</span></td>
                             <td>
-                                <button class="btn btn-small btn-secondary" onclick="App.viewQuote('${quote.id}')">👁️</button>
-                                <button class="btn btn-small btn-secondary" onclick="App.editQuote('${quote.id}')">✏️</button>
-                                <button class="btn btn-small btn-secondary" onclick="App.duplicateQuote('${quote.id}')">📋</button>
-                                <button class="btn btn-small btn-danger" onclick="App.deleteQuote('${quote.id}')">🗑️</button>
+                                <button class="btn btn-small btn-secondary" onclick="App.viewQuote('${quote.id}')" data-tooltip="Teklifi görüntüle">👁️</button>
+                                <button class="btn btn-small btn-secondary" onclick="App.editQuote('${quote.id}')" data-tooltip="Teklifi düzenle">✏️</button>
+                                <button class="btn btn-small btn-secondary" onclick="App.duplicateQuote('${quote.id}')" data-tooltip="Teklifi kopyala">📋</button>
+                                <button class="btn btn-small btn-danger" onclick="App.deleteQuote('${quote.id}')" data-tooltip="Teklifi sil">🗑️</button>
                             </td>
                         </tr>
                     `;
@@ -2639,32 +3387,78 @@
                 const quotes = this.loadFromStorage('quotes', []);
                 const quote = quotes.find(q => q.id === quoteId);
 
-                if (!quote) return;
+                if (!quote) {
+                    this.showAlert('Teklif bulunamadı!', 'error');
+                    return;
+                }
+
+                // Ensure quote has required properties
+                if (!quote.totals) {
+                    quote.totals = {
+                        subtotal: 0,
+                        totalDiscount: 0,
+                        totalVAT: 0,
+                        grandTotal: 0,
+                        currency: 'TL',
+                        vatRate: 20
+                    };
+                }
 
                 const companySettings = this.loadFromStorage('companySettings', {});
                 const logo = this.loadFromStorage('companyLogo', '');
 
-                const previewHtml = this.generateQuoteHTML(quote, companySettings, logo);
+                try {
+                    const previewHtml = this.generateQuoteHTML(quote, companySettings, logo);
 
-                const modalHtml = `
-                    <div id="viewQuoteModal" class="modal active">
-                        <div class="modal-content" style="max-width: 1200px;">
-                            <div class="modal-header">
-                                <h2>Teklif: ${this.escapeHtml(quote.number)}</h2>
-                                <button class="modal-close" onclick="document.getElementById('viewQuoteModal').remove()">&times;</button>
-                            </div>
-                            <div class="preview-container">
-                                ${previewHtml}
-                            </div>
-                            <div class="btn-group">
-                                <button class="btn btn-primary" onclick="window.print()">🖨️ Yazdır</button>
-                                <button class="btn btn-secondary" onclick="document.getElementById('viewQuoteModal').remove()">✖️ Kapat</button>
+                    const modalHtml = `
+                        <div id="viewQuoteModal" class="modal active">
+                            <div class="modal-content" style="max-width: 1200px;">
+                                <div class="modal-header">
+                                    <h2>Teklif: ${this.escapeHtml(quote.number || '')}</h2>
+                                    <button class="modal-close" onclick="document.getElementById('viewQuoteModal').remove()">&times;</button>
+                                </div>
+                                <div class="preview-container">
+                                    ${previewHtml}
+                                </div>
+                                <div class="btn-group">
+                                    <button class="btn btn-primary" onclick="App.printQuoteInNewWindow('${quote.id}')">🖨️ Yazdır</button>
+                                    <button class="btn btn-secondary" onclick="document.getElementById('viewQuoteModal').remove()">✖️ Kapat</button>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                `;
+                    `;
 
-                document.body.insertAdjacentHTML('beforeend', modalHtml);
+                    document.body.insertAdjacentHTML('beforeend', modalHtml);
+                    
+                    // Generate QR Code after modal is rendered
+                    setTimeout(() => {
+                        this.generateQRCode(quote.id, companySettings.website);
+                    }, 100);
+                } catch (error) {
+                    console.error('Teklif görüntüleme hatası:', error);
+                    this.showAlert('Teklif görüntülenirken bir hata oluştu: ' + error.message, 'error');
+                }
+            },
+            
+            generateQRCode(elementId, url) {
+                if (typeof QRCode === 'undefined' || !url) return;
+                
+                const qrElement = document.getElementById(`qrCode-${elementId}`);
+                if (!qrElement) return;
+                
+                // Clear existing QR code
+                qrElement.innerHTML = '';
+                
+                // Generate QR code
+                const qrUrl = url.startsWith('http') ? url : 'https://' + url;
+                new QRCode(qrElement, {
+                    text: qrUrl,
+                    width: 60,
+                    height: 60,
+                    colorDark: '#1e293b',
+                    colorLight: '#ffffff',
+                    correctLevel: QRCode.CorrectLevel.H
+                });
             },
 
             editQuote(quoteId) {
@@ -2711,14 +3505,17 @@
                 const quotes = this.loadFromStorage('quotes', []);
                 const quote = quotes.find(q => q.id === quoteId);
 
-                if (!quote) return;
+                if (!quote) {
+                    this.showAlert('Teklif bulunamadı!', 'error');
+                    return;
+                }
 
                 this.currentQuote = {
                     id: null,
-                    items: JSON.parse(JSON.stringify(quote.items)),
+                    items: JSON.parse(JSON.stringify(quote.items || [])),
                     options: JSON.parse(JSON.stringify(quote.options || [])),
                     status: 'draft',
-                    totals: quote.totals
+                    totals: quote.totals ? JSON.parse(JSON.stringify(quote.totals)) : null
                 };
 
                 this.generateQuoteNumber();
@@ -2726,14 +3523,17 @@
                 const today = new Date().toISOString().split('T')[0];
                 document.getElementById('quoteDate').value = today;
 
-                document.getElementById('quoteTitle').value = quote.title || '';
+                document.getElementById('quoteTitle').value = (quote.title || '') + ' (Kopya)';
                 document.getElementById('quoteScope').value = quote.scope || '';
                 document.getElementById('quoteValidityDays').value = quote.validityDays || 10;
-                document.getElementById('customerCompany').value = quote.customer.company;
-                document.getElementById('customerContact').value = quote.customer.contact || '';
-                document.getElementById('customerPhone').value = quote.customer.phone || '';
-                document.getElementById('customerEmail').value = quote.customer.email || '';
+                document.getElementById('customerCompany').value = quote.customer ? quote.customer.company : '';
+                document.getElementById('customerContact').value = quote.customer ? quote.customer.contact || '' : '';
+                document.getElementById('customerPhone').value = quote.customer ? quote.customer.phone || '' : '';
+                document.getElementById('customerEmail').value = quote.customer ? quote.customer.email || '' : '';
                 document.getElementById('quoteExplanations').value = quote.explanations || '';
+                if (this.quillEditor) {
+                    this.quillEditor.root.innerHTML = quote.explanations || '';
+                }
                 document.getElementById('showDiscountColumn').checked = quote.showDiscount || false;
                 document.getElementById('showVATColumn').checked = quote.showVAT !== false;
 
@@ -2746,11 +3546,22 @@
                 });
                 document.querySelectorAll('.nav-tab')[3].classList.add('active');
 
-                this.showAlert(`Teklif kopyalandı: ${quote.number} → Yeni teklif`, 'success');
+                this.showAlert(`Teklif kopyalandı: ${quote.number || ''} → Yeni teklif`, 'success');
             },
 
-            deleteQuote(quoteId) {
-                if (!confirm('Bu teklifi silmek istediğinizden emin misiniz?')) {
+            async deleteQuote(quoteId) {
+                const result = await Swal.fire({
+                    title: 'Emin misiniz?',
+                    text: 'Bu teklifi silmek istediğinizden emin misiniz?',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#dc2626',
+                    cancelButtonColor: '#64748b',
+                    confirmButtonText: 'Evet, Sil',
+                    cancelButtonText: 'İptal'
+                });
+                
+                if (!result.isConfirmed) {
                     return;
                 }
 
@@ -2776,6 +3587,57 @@
                 if (!dateString) return '';
                 const date = new Date(dateString);
                 return date.toLocaleDateString('tr-TR');
+            },
+            
+            // Print in new window
+            printInNewWindow() {
+                const printContent = document.getElementById('quotePrintArea').innerHTML;
+                const printWindow = window.open('', '_blank', 'width=800,height=600');
+                
+                if (!printWindow) {
+                    this.showAlert('Pop-up engelleyici aktif. Lütfen izin verin.', 'error');
+                    return;
+                }
+                
+                printWindow.document.open();
+                printWindow.document.write("<!DOCTYPE html><html lang=\"tr\"><head><meta charset=\"UTF-8\"><title>Teklif Yazdır</title><style>@page{margin:1.5cm;size:A4 portrait}@media print{body{margin:0;padding:0}}body{font-family:\"Segoe UI\",Tahoma,Geneva,Verdana,sans-serif;padding:20px}.quote-preview{max-width:100%}</style></head><body>");
+                printWindow.document.body.innerHTML = printContent;
+                const script = printWindow.document.createElement('script');
+                script.textContent = 'window.onload=function(){window.print()}';
+                printWindow.document.body.appendChild(script);
+                printWindow.document.close();
+                printWindow.document.close();
+            },
+            
+            printQuoteInNewWindow(quoteId) {
+                const quotes = this.loadFromStorage('quotes', []);
+                const quote = quotes.find(q => q.id === quoteId);
+                
+                if (!quote) {
+                    this.showAlert('Teklif bulunamadı!', 'error');
+                    return;
+                }
+                
+                const companySettings = this.loadFromStorage('companySettings', {});
+                const logo = this.loadFromStorage('companyLogo', '');
+                const printContent = this.generateQuoteHTML(quote, companySettings, logo);
+                
+                const printWindow = window.open('', '_blank', 'width=800,height=600');
+                
+                if (!printWindow) {
+                    this.showAlert('Pop-up engelleyici aktif. Lütfen izin verin.', 'error');
+                    return;
+                }
+                
+                const escapedTitle = this.escapeHtml(quote.number);
+                printWindow.document.open();
+                printWindow.document.write("<!DOCTYPE html><html lang=\"tr\"><head><meta charset=\"UTF-8\"><title>Teklif Yazdır - " + escapedTitle + "</title><style>@page{margin:1.5cm;size:A4 portrait}@media print{body{margin:0;padding:0}}body{font-family:\"Segoe UI\",Tahoma,Geneva,Verdana,sans-serif;padding:20px}.quote-preview{max-width:100%}</style></head><body>");
+                printWindow.document.body.innerHTML = printContent;
+                const script = printWindow.document.createElement('script');
+                script.textContent = 'window.onload=function(){window.print()}';
+                printWindow.document.body.appendChild(script);
+                printWindow.document.close();
+                printWindow.document.close();
             },
 
             getCurrencySymbol(currency) {
