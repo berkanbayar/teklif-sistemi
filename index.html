@@ -4234,7 +4234,10 @@
             },
 
             printInNewWindow() {
-                this.openPrintWindow(document.getElementById('quotePrintArea').innerHTML, 'Teklif Yazdır', 'preview');
+                const title = document.getElementById('quoteTitle').value || 'Teklif';
+                const number = document.getElementById('quoteNumber').value || '';
+                const pdfTitle = number ? `${title} - ${number}` : title;
+                this.openPrintWindow(document.getElementById('quotePrintArea').innerHTML, pdfTitle, 'preview');
             },
 
             async printQuoteById(quoteId) {
@@ -4244,7 +4247,8 @@
 
                 const companySettings = await this.loadFromStorage('companySettings', {});
                 const logo = await this.loadFromStorage('companyLogo', '');
-                this.openPrintWindow(this.generateQuoteHTML(quote, companySettings, logo), `Teklif Yazdır - ${this.escapeHtml(quote.number)}`, quote.id);
+                const pdfTitle = quote.number ? `${quote.title || 'Teklif'} - ${quote.number}` : (quote.title || 'Teklif');
+                this.openPrintWindow(this.generateQuoteHTML(quote, companySettings, logo), pdfTitle, quote.id);
             },
 
             getCurrencySymbol(currency) {
