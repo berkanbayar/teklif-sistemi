@@ -13,12 +13,10 @@
     <!-- QR Code Generator -->
     <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
     
-    <!-- jsPDF for PDF generation (for bulk download) -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    
-    <!-- EmailJS for email sending -->
-    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
-    
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-database-compat.js"></script>
+
     <!-- SweetAlert2 for better popups/confirmations -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     
@@ -782,159 +780,24 @@
             font-size: 14px;
         }
 
-        /* ==============================================
-           YAZDIRMA STİLLERİ (PRINT STYLES)
-           ============================================== */
+        /* Print Styles */
         @media print {
-            body {
-                background: white;
-            }
-
-            body * {
-                visibility: hidden;
-            }
-
-            #quotePrintArea,
-            #quotePrintArea * {
-                visibility: visible;
-            }
-
-            #quotePrintArea {
-                position: absolute;
-                left: 0;
-                top: 0;
-                width: 100%;
-                background: white;
-            }
-
-            .preview-container {
-                padding: 0 !important;
-                margin: 0 !important;
-                box-shadow: none !important;
-                border: none !important;
-                background: white !important;
-            }
-
-            .btn,
-            .btn-group,
-            .header,
-            .nav-tabs,
-            .section-title,
-            .form-grid,
-            h2.section-title {
-                display: none !important;
-                visibility: hidden !important;
-            }
-
-            .quote-preview {
-                max-width: 100%;
-                font-size: 10pt;
-                padding: 0;
-                margin: 0;
-            }
-
-            @page {
-                margin: 1.5cm;
-                margin-top: 3cm;
-                margin-bottom: 2.5cm;
-                size: A4 portrait;
-            }
-            
-            /* Remove URL and date/time from print */
-            @page {
-                @top-left {
-                    content: "";
-                }
-                @top-right {
-                    content: "";
-                }
-            }
-            
-            /* Repeat header and footer on each page */
-            @page {
-                @top-center {
-                    content: element(header);
-                }
-                @bottom-center {
-                    content: element(footer);
-                }
-            }
-            
-            /* Alternative method - hide browser print headers */
-            @media print {
-                @page {
-                    margin: 1.5cm;
-                    margin-top: 3cm;
-                    margin-bottom: 2.5cm;
-                }
-                
-                .pdf-header {
-                    position: running(header);
-                }
-                
-                .pdf-footer {
-                    position: running(footer);
-                }
-            }
-
-            .pdf-header,
-            .pdf-footer,
-            .quote-items-table-pdf,
-            .quote-signature-section {
-                page-break-inside: avoid;
-            }
-            
-            /* Page break improvements */
-            .quote-notes-section {
-                page-break-inside: avoid;
-            }
-            
-            .quote-notes-header {
-                page-break-after: avoid;
-            }
-            
-            /* Repeat header on each page for explanations */
-            .quote-notes-section > div:not(.quote-notes-header) {
-                page-break-inside: auto;
-            }
-            
-            /* Add header repetition using CSS (limited browser support) */
-            @supports (position: running(header)) {
-                .quote-notes-header {
-                    position: running(notes-header);
-                }
-                
-                .quote-notes-section > div:not(.quote-notes-header)::before {
-                    content: element(notes-header);
-                    display: block;
-                    margin-bottom: 15px;
-                }
-            }
-            
-            /* Keep table rows together when possible */
-            .quote-items-table-pdf tr {
-                page-break-inside: avoid;
-            }
-            
-            /* Allow breaking between main item and detail rows */
-            .main-item-row {
-                page-break-after: avoid;
-            }
-            
-            .detail-row {
-                page-break-before: avoid;
-            }
-
-            /* Make sure colors print */
-            * {
-                -webkit-print-color-adjust: exact;
-                print-color-adjust: exact;
-            }
+            body { background: white; }
+            body * { visibility: hidden; }
+            #quotePrintArea, #quotePrintArea * { visibility: visible; }
+            #quotePrintArea { position: absolute; left: 0; top: 0; width: 100%; background: white; }
+            .preview-container { padding: 0 !important; margin: 0 !important; box-shadow: none !important; border: none !important; background: white !important; }
+            .btn, .btn-group, .header, .nav-tabs, .section-title, .form-grid, h2.section-title { display: none !important; }
+            .quote-preview { max-width: 100%; font-size: 10pt; padding: 0; margin: 0; }
+            @page { margin: 1.5cm 1.5cm 2.5cm 1.5cm; size: A4 portrait; }
+            .pdf-header, .pdf-footer, .quote-items-table-pdf, .quote-signature-section, .quote-notes-section { page-break-inside: avoid; }
+            .quote-items-table-pdf tr { page-break-inside: avoid; }
+            .main-item-row { page-break-after: avoid; }
+            .detail-row { page-break-before: avoid; }
+            * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         }
 
-        /* ==============================================
-           RESPONSİVE DÜZENLEMELER (RESPONSIVE)
-           ============================================== */
+        /* Responsive */
         @media (max-width: 768px) {
             .form-grid {
                 grid-template-columns: 1fr;
@@ -949,9 +812,7 @@
             }
         }
 
-        /* ==============================================
-           YARDıMCı SINIFLAR (UTILITY CLASSES)
-           ============================================== */
+        /* Utility Classes */
         .text-right {
             text-align: right;
         }
@@ -1046,16 +907,7 @@
 </head>
 <body>
 
-    <!-- ==============================================
-         KULLANIM TALİMATI (USAGE INSTRUCTIONS)
-         ==============================================
-         Bu dosyayı bir tarayıcıda açın.
-         1. İlk olarak "Firma Ayarları" sekmesine gidip şirket bilgilerinizi girin ve kaydedin.
-         2. "Şablon & Tema" sekmesinde şablonunuzu ve renklerinizi seçin.
-         3. "Ürün Kütüphanesi" sekmesinde sık kullandığınız ürünleri ekleyin.
-         4. "Yeni Teklif" sekmesinde teklif oluşturun.
-         5. "Teklif Geçmişi" sekmesinden geçmiş tekliflerinizi görüntüleyin.
-         ============================================== -->
+    <!-- Kullanım: 1. Firma Ayarları 2. Şablon & Tema 3. Ürün Kütüphanesi 4. Yeni Teklif 5. Teklif Geçmişi -->
 
     <div class="header">
         <div class="container">
@@ -1074,9 +926,7 @@
         <!-- Alert Area -->
         <div id="alert" class="alert"></div>
 
-        <!-- ==============================================
-             FİRMA AYARLARI (COMPANY SETTINGS)
-             ============================================== -->
+        <!-- Firma Ayarları -->
         <div id="firma-ayarlari" class="section active">
             <h2 class="section-title">Firma Ayarları</h2>
 
@@ -1178,9 +1028,7 @@
             </div>
         </div>
 
-        <!-- ==============================================
-             ŞABLON & TEMA (TEMPLATE & THEME)
-             ============================================== -->
+        <!-- Şablon & Tema -->
         <div id="sablon-tema" class="section">
             <h2 class="section-title">Şablon & Tema Ayarları</h2>
 
@@ -1271,9 +1119,7 @@
             </div>
         </div>
 
-        <!-- ==============================================
-             ÜRÜN KÜTÜPHANESİ (PRODUCT LIBRARY)
-             ============================================== -->
+        <!-- Ürün Kütüphanesi -->
         <div id="urun-kutuphanesi" class="section">
             <h2 class="section-title">Ürün Kütüphanesi</h2>
 
@@ -1311,9 +1157,7 @@
             </div>
         </div>
 
-        <!-- ==============================================
-             YENİ TEKLİF (NEW QUOTE)
-             ============================================== -->
+        <!-- Yeni Teklif -->
         <div id="yeni-teklif" class="section">
             <h2 class="section-title">Yeni Teklif Oluştur</h2>
 
@@ -1497,9 +1341,7 @@
             </div>
         </div>
 
-        <!-- ==============================================
-             TEKLİF GEÇMİŞİ (QUOTE HISTORY)
-             ============================================== -->
+        <!-- Teklif Geçmişi -->
         <div id="teklif-gecmisi" class="section">
             <h2 class="section-title">Teklif Geçmişi</h2>
 
@@ -1539,9 +1381,7 @@
         </div>
     </div>
 
-    <!-- ==============================================
-         MODAL: ÜRÜN EKLE / DÜZENLE (PRODUCT ADD/EDIT)
-         ============================================== -->
+    <!-- Modal: Ürün Ekle/Düzenle -->
     <div id="productModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
@@ -1681,9 +1521,7 @@
         </div>
     </div>
 
-    <!-- ==============================================
-         MODAL: MÜŞTERİ SEÇME (CUSTOMER SELECT)
-         ============================================== -->
+    <!-- Modal: Müşteri Seçme -->
     <div id="customerSelectModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
@@ -1714,9 +1552,7 @@
         </div>
     </div>
 
-    <!-- ==============================================
-         MODAL: YENİ MÜŞTERİ EKLEME (NEW CUSTOMER)
-         ============================================== -->
+    <!-- Modal: Yeni Müşteri -->
     <div id="customerModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
@@ -1760,9 +1596,7 @@
         </div>
     </div>
 
-    <!-- ==============================================
-         MODAL: ÜRÜN SEÇME (PRODUCT SELECT)
-         ============================================== -->
+    <!-- Modal: Ürün Seçme -->
     <div id="productSelectModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
@@ -1809,9 +1643,21 @@
     </div>
 
     <script>
-        // ==============================================
-        // JAVASCRIPT APPLICATION
-        // ==============================================
+        // Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyBk9v7ywRIUlEllGbMij01zvHSAyOpF0iE",
+            authDomain: "teklifsistemi-b6da2.firebaseapp.com",
+            projectId: "teklifsistemi-b6da2",
+            storageBucket: "teklifsistemi-b6da2.firebasestorage.app",
+            messagingSenderId: "248174510066",
+            appId: "1:248174510066:web:a16290781b808b389db56b",
+            measurementId: "G-XF3N0L13SS",
+            databaseURL: "https://teklifsistemi-b6da2-default-rtdb.firebaseio.com"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
 
         const App = {
             // Current state
@@ -1826,19 +1672,27 @@
                 showVAT: true
             },
             selectedProducts: [],
+            firebaseReady: false,
 
-            // ==============================================
             // INITIALIZATION
-            // ==============================================
-            init() {
+            async init() {
                 const today = new Date().toISOString().split('T')[0];
                 document.getElementById('quoteDate').value = today;
 
-                this.loadCompanySettings();
-                this.loadTemplateSettings();
-                this.loadProducts();
+                // Firebase bağlantısını kontrol et
+                try {
+                    await database.ref('.info/connected').once('value');
+                    this.firebaseReady = true;
+                    console.log('✅ Firebase bağlantısı başarılı!');
+                } catch (e) {
+                    console.warn('⚠️ Firebase bağlantısı yok, localStorage kullanılacak');
+                }
+
+                await this.loadCompanySettings();
+                await this.loadTemplateSettings();
+                await this.loadProducts();
                 this.generateQuoteNumber();
-                this.loadQuoteHistory();
+                await this.loadQuoteHistory();
                 this.setupEventListeners();
 
                 console.log('✅ Teklif Oluşturucu başarıyla yüklendi!');
@@ -1867,12 +1721,13 @@
                         theme: 'snow',
                         modules: {
                             toolbar: [
+                                [{ 'size': ['small', false, 'large', 'huge'] }],
                                 ['bold', 'italic', 'underline'],
                                 [{ 'list': 'ordered'}, { 'list': 'bullet' }],
                                 ['clean']
                             ]
                         },
-                        placeholder: 'Açıklamalarınızı buraya yazın. Bold, italik ve liste formatlaması yapabilirsiniz...'
+                        placeholder: 'Açıklamalarınızı buraya yazın...'
                     });
                     
                     // Sync Quill content to hidden textarea
@@ -1892,12 +1747,13 @@
                         theme: 'snow',
                         modules: {
                             toolbar: [
+                                [{ 'size': ['small', false, 'large', 'huge'] }],
                                 ['bold', 'italic', 'underline'],
                                 [{ 'list': 'ordered'}, { 'list': 'bullet' }],
                                 ['clean']
                             ]
                         },
-                        placeholder: 'Varsayılan açıklamalarınızı buraya yazın. Bold, italik ve liste formatlaması yapabilirsiniz...'
+                        placeholder: 'Varsayılan açıklamalarınızı buraya yazın...'
                     });
                     
                     // Sync Quill content to hidden textarea
@@ -1917,12 +1773,13 @@
                         theme: 'snow',
                         modules: {
                             toolbar: [
+                                [{ 'size': ['small', false, 'large', 'huge'] }],
                                 ['bold', 'italic', 'underline'],
                                 [{ 'list': 'ordered'}, { 'list': 'bullet' }],
                                 ['clean']
                             ]
                         },
-                        placeholder: 'Ürün açıklamasını buraya yazın. Bold, italik ve liste formatlaması yapabilirsiniz...'
+                        placeholder: 'Ürün açıklamasını buraya yazın...'
                     });
                     
                     // Sync Quill content to hidden textarea
@@ -1978,21 +1835,67 @@
                 window.scrollTo({ top: 0, behavior: 'smooth' });
             },
 
-            // ==============================================
-            // STORAGE HELPERS
-            // ==============================================
-            saveToStorage(key, data) {
+            // STORAGE HELPERS - Firebase + localStorage fallback
+            async saveToStorage(key, data) {
+                // Logo gibi büyük veriler sadece localStorage'da
+                if (key === 'companyLogo') {
+                    try {
+                        localStorage.setItem(key, JSON.stringify(data));
+                        return true;
+                    } catch (e) {
+                        console.error('Logo storage error:', e);
+                        return false;
+                    }
+                }
+
+                // Firebase'e kaydet
+                if (this.firebaseReady) {
+                    try {
+                        await database.ref(key).set(data);
+                        console.log(`✅ ${key} Firebase'e kaydedildi`);
+                        return true;
+                    } catch (e) {
+                        console.error('Firebase save error:', e);
+                    }
+                }
+
+                // Fallback: localStorage
                 try {
                     localStorage.setItem(key, JSON.stringify(data));
                     return true;
                 } catch (e) {
                     console.error('Storage error:', e);
-                    this.showAlert('Veri kaydedilemedi. Tarayıcı depolama alanı dolu olabilir.', 'error');
+                    this.showAlert('Veri kaydedilemedi.', 'error');
                     return false;
                 }
             },
 
-            loadFromStorage(key, defaultValue = null) {
+            async loadFromStorage(key, defaultValue = null) {
+                // Logo sadece localStorage'dan
+                if (key === 'companyLogo') {
+                    try {
+                        const data = localStorage.getItem(key);
+                        return data ? JSON.parse(data) : defaultValue;
+                    } catch (e) {
+                        return defaultValue;
+                    }
+                }
+
+                // Firebase'den oku
+                if (this.firebaseReady) {
+                    try {
+                        const snapshot = await database.ref(key).once('value');
+                        const data = snapshot.val();
+                        if (data !== null) {
+                            console.log(`✅ ${key} Firebase'den yüklendi`);
+                            return data;
+                        }
+                    } catch (e) {
+                        console.error('Firebase load error:', e);
+                    }
+                }
+
+                // Fallback: localStorage
                 try {
                     const data = localStorage.getItem(key);
                     return data ? JSON.parse(data) : defaultValue;
@@ -2005,11 +1908,9 @@
             // ==============================================
             // COMPANY SETTINGS
             // ==============================================
-            saveCompanySettings() {
-                // Collect bank accounts
+            async saveCompanySettings() {
                 const bankAccounts = [];
-                const bankAccountElements = document.querySelectorAll('.bank-account-item');
-                bankAccountElements.forEach(item => {
+                document.querySelectorAll('.bank-account-item').forEach(item => {
                     const accountId = item.dataset.accountId;
                     bankAccounts.push({
                         id: accountId,
@@ -2019,7 +1920,7 @@
                         iban: document.getElementById(`bankIBAN_${accountId}`).value
                     });
                 });
-                
+
                 const settings = {
                     name: document.getElementById('companyName').value,
                     tagline: document.getElementById('companyTagline').value,
@@ -2029,9 +1930,7 @@
                     address: document.getElementById('companyAddress').value,
                     taxOffice: document.getElementById('companyTaxOffice').value,
                     taxNumber: document.getElementById('companyTaxNumber').value,
-                    logo: this.loadFromStorage('companyLogo', ''),
                     bankAccounts: bankAccounts,
-                    // Legacy fields for backward compatibility
                     bankName: bankAccounts.length > 0 ? bankAccounts[0].bankName : '',
                     bankAccountName: bankAccounts.length > 0 ? bankAccounts[0].accountName : '',
                     bankIBANTL: bankAccounts.find(acc => acc.currency === 'TL')?.iban || '',
@@ -2047,13 +1946,13 @@
                     return;
                 }
 
-                if (this.saveToStorage('companySettings', settings)) {
+                if (await this.saveToStorage('companySettings', settings)) {
                     this.showAlert('✅ Firma ayarları başarıyla kaydedildi!');
                 }
             },
 
-            loadCompanySettings() {
-                const settings = this.loadFromStorage('companySettings');
+            async loadCompanySettings() {
+                const settings = await this.loadFromStorage('companySettings');
 
                 if (settings) {
                     document.getElementById('companyName').value = settings.name || '';
@@ -2079,7 +1978,7 @@
                         document.getElementById('companyDefaultNotes').value = settings.defaultNotes || '';
                     }
 
-                    const logo = this.loadFromStorage('companyLogo');
+                    const logo = await this.loadFromStorage('companyLogo');
                     if (logo) {
                         document.getElementById('logoPreview').style.display = 'block';
                         document.getElementById('logoPreviewImg').src = logo;
@@ -2233,61 +2132,44 @@
                 }
             },
 
-            saveTemplateSettings() {
+            async saveTemplateSettings() {
                 const settings = {
                     template: this.selectedTemplate,
                     primaryColor: document.getElementById('primaryColor').value,
                     secondaryColor: document.getElementById('secondaryColor').value
                 };
 
-                if (this.saveToStorage('templateSettings', settings)) {
+                if (await this.saveToStorage('templateSettings', settings)) {
                     this.showAlert('✅ Şablon ayarları kaydedildi!');
                     this.applyTemplateColors();
                 }
             },
 
-            loadTemplateSettings() {
-                const settings = this.loadFromStorage('templateSettings');
-
+            async loadTemplateSettings() {
+                const settings = await this.loadFromStorage('templateSettings');
                 if (settings) {
                     this.selectedTemplate = settings.template || 'template1';
                     document.getElementById('primaryColor').value = settings.primaryColor || '#00BCD4';
                     document.getElementById('secondaryColor').value = settings.secondaryColor || '#0097A7';
-
-                    // Select template card
-                    document.querySelectorAll('.template-card').forEach(card => {
-                        card.classList.remove('selected');
-                    });
+                    document.querySelectorAll('.template-card').forEach(card => card.classList.remove('selected'));
                     const selectedCard = document.querySelector(`[data-template="${this.selectedTemplate}"]`);
-                    if (selectedCard) {
-                        selectedCard.classList.add('selected');
-                    }
-
+                    if (selectedCard) selectedCard.classList.add('selected');
                     this.applyTemplateColors();
                 }
             },
 
-            applyTemplateColors() {
-                const settings = this.loadFromStorage('templateSettings', {
-                    primaryColor: '#00BCD4',
-                    secondaryColor: '#0097A7'
-                });
-
+            async applyTemplateColors() {
+                const settings = await this.loadFromStorage('templateSettings', { primaryColor: '#00BCD4', secondaryColor: '#0097A7' });
                 document.documentElement.style.setProperty('--primary-color', settings.primaryColor);
                 document.documentElement.style.setProperty('--secondary-color', settings.secondaryColor);
             },
 
-            previewTemplate() {
+            async previewTemplate() {
                 const preview = document.getElementById('templateMiniPreview');
                 preview.style.display = 'block';
-
-                const logo = this.loadFromStorage('companyLogo');
+                const logo = await this.loadFromStorage('companyLogo');
                 const logoEl = document.getElementById('previewLogo');
-                if (logo) {
-                    logoEl.src = logo;
-                    logoEl.style.display = 'block';
-                }
-
+                if (logo) { logoEl.src = logo; logoEl.style.display = 'block'; }
                 this.applyTemplateColors();
                 preview.scrollIntoView({ behavior: 'smooth' });
             },
@@ -2295,15 +2177,14 @@
             // ==============================================
             // PRODUCT LIBRARY
             // ==============================================
-            showProductModal(productId = null) {
+            async showProductModal(productId = null) {
                 document.getElementById('productModal').classList.add('active');
 
-                // Add event listener for category change
                 const categorySelect = document.getElementById('productCategory');
                 categorySelect.onchange = () => this.toggleMachineFields();
 
                 if (productId) {
-                    const products = this.loadFromStorage('products', []);
+                    const products = await this.loadFromStorage('products', []);
                     const product = products.find(p => p.id === productId);
 
                     if (product) {
@@ -2355,7 +2236,7 @@
                     document.getElementById('productUnit').value = 'Adet';
                     document.getElementById('productPrice').value = '';
 
-                    const companySettings = this.loadFromStorage('companySettings', {});
+                    const companySettings = await this.loadFromStorage('companySettings', {});
                     document.getElementById('productCurrency').value = companySettings.defaultCurrency || 'TL';
                     // Clear product description editor
                     if (this.productDescriptionEditor) {
@@ -2391,7 +2272,7 @@
                 document.getElementById('productModal').classList.remove('active');
             },
 
-            saveProduct() {
+            async saveProduct() {
                 const name = document.getElementById('productName').value.trim();
 
                 if (!name) {
@@ -2441,7 +2322,7 @@
                 product.unitCost = parseFloat(document.getElementById('productUnitCost').value) || 0;
                 product.targetPrice = parseFloat(document.getElementById('productTargetPrice').value) || 0;
 
-                let products = this.loadFromStorage('products', []);
+                let products = await this.loadFromStorage('products', []);
                 const existingIndex = products.findIndex(p => p.id === product.id);
 
                 if (existingIndex >= 0) {
@@ -2452,13 +2333,13 @@
                     this.showAlert('✅ Ürün eklendi!');
                 }
 
-                this.saveToStorage('products', products);
+                await this.saveToStorage('products', products);
                 this.closeProductModal();
                 this.renderProductTable();
             },
 
-            duplicateProduct(productId) {
-                const products = this.loadFromStorage('products', []);
+            async duplicateProduct(productId) {
+                const products = await this.loadFromStorage('products', []);
                 const product = products.find(p => p.id === productId);
 
                 if (product) {
@@ -2470,7 +2351,7 @@
                     };
 
                     products.push(newProduct);
-                    this.saveToStorage('products', products);
+                    await this.saveToStorage('products', products);
                     this.showAlert('✅ Ürün kopyalandı!');
                     this.renderProductTable();
                 }
@@ -2488,29 +2369,26 @@
                     cancelButtonText: 'İptal'
                 });
                 
-                if (!result.isConfirmed) {
-                    return;
-                }
+                if (!result.isConfirmed) return;
 
-                let products = this.loadFromStorage('products', []);
+                let products = await this.loadFromStorage('products', []);
                 products = products.filter(p => p.id !== productId);
-
-                this.saveToStorage('products', products);
+                await this.saveToStorage('products', products);
                 this.showAlert('✅ Ürün silindi!');
                 this.renderProductTable();
             },
 
-            loadProducts() {
-                this.renderProductTable();
+            async loadProducts() {
+                await this.renderProductTable();
             },
 
-            filterProducts() {
-                this.renderProductTable();
+            async filterProducts() {
+                await this.renderProductTable();
             },
 
-            renderProductTable() {
+            async renderProductTable() {
                 const tbody = document.getElementById('productTableBody');
-                let products = this.loadFromStorage('products', []);
+                let products = await this.loadFromStorage('products', []);
 
                 const searchTerm = document.getElementById('productSearch').value.toLowerCase();
                 const categoryFilter = document.getElementById('productCategoryFilter').value;
@@ -2573,9 +2451,9 @@
                 document.getElementById('customerSelectModal').classList.remove('active');
             },
             
-            renderCustomerSelectTable() {
+            async renderCustomerSelectTable() {
                 const tbody = document.getElementById('customerSelectTableBody');
-                let customers = this.loadFromStorage('customers', []);
+                let customers = await this.loadFromStorage('customers', []);
                 
                 const searchTerm = document.getElementById('customerSelectSearch')?.value.toLowerCase() || '';
                 if (searchTerm) {
@@ -2606,8 +2484,8 @@
                 `).join('');
             },
             
-            selectCustomer(customerId) {
-                const customers = this.loadFromStorage('customers', []);
+            async selectCustomer(customerId) {
+                const customers = await this.loadFromStorage('customers', []);
                 const customer = customers.find(c => c.id === customerId);
                 
                 if (customer) {
@@ -2626,11 +2504,11 @@
                 }
             },
             
-            showCustomerModal(customerId = null) {
+            async showCustomerModal(customerId = null) {
                 document.getElementById('customerModal').classList.add('active');
-                
+
                 if (customerId) {
-                    const customers = this.loadFromStorage('customers', []);
+                    const customers = await this.loadFromStorage('customers', []);
                     const customer = customers.find(c => c.id === customerId);
                     
                     if (customer) {
@@ -2657,15 +2535,11 @@
                 document.getElementById('customerModal').classList.remove('active');
             },
             
-            saveCustomer() {
+            async saveCustomer() {
                 const company = document.getElementById('newCustomerCompany').value.trim();
-                
-                if (!company) {
-                    this.showAlert('Lütfen firma adını girin!', 'error');
-                    return;
-                }
-                
-                const customers = this.loadFromStorage('customers', []);
+                if (!company) { this.showAlert('Lütfen firma adını girin!', 'error'); return; }
+
+                const customers = await this.loadFromStorage('customers', []);
                 const editId = document.getElementById('customerEditId').value;
                 
                 const customer = {
@@ -2688,44 +2562,34 @@
                     customers.push(customer);
                 }
                 
-                this.saveToStorage('customers', customers);
+                await this.saveToStorage('customers', customers);
                 this.closeCustomerModal();
                 this.showAlert('Müşteri kaydedildi!', 'success');
-                
-                // If customer select modal is open, refresh it
                 if (document.getElementById('customerSelectModal').classList.contains('active')) {
                     this.renderCustomerSelectTable();
                 }
             },
-            
-            editCustomer(customerId) {
-                this.showCustomerModal(customerId);
-            },
-            
+
+            editCustomer(customerId) { this.showCustomerModal(customerId); },
+
             async deleteCustomer(customerId) {
                 const result = await Swal.fire({
-                    title: 'Emin misiniz?',
-                    text: 'Bu müşteri silinecek!',
-                    icon: 'warning',
-                    showCancelButton: true,
-                    confirmButtonColor: '#dc2626',
-                    cancelButtonColor: '#64748b',
-                    confirmButtonText: 'Evet, Sil',
-                    cancelButtonText: 'İptal'
+                    title: 'Emin misiniz?', text: 'Bu müşteri silinecek!', icon: 'warning',
+                    showCancelButton: true, confirmButtonColor: '#dc2626', cancelButtonColor: '#64748b',
+                    confirmButtonText: 'Evet, Sil', cancelButtonText: 'İptal'
                 });
-                
                 if (result.isConfirmed) {
-                    const customers = this.loadFromStorage('customers', []);
+                    const customers = await this.loadFromStorage('customers', []);
                     const filtered = customers.filter(c => c.id !== customerId);
-                    this.saveToStorage('customers', filtered);
+                    await this.saveToStorage('customers', filtered);
                     this.renderCustomerSelectTable();
                     this.showAlert('Müşteri silindi!', 'success');
                 }
             },
 
-            renderProductSelectTable() {
+            async renderProductSelectTable() {
                 const tbody = document.getElementById('productSelectTableBody');
-                let products = this.loadFromStorage('products', []);
+                let products = await this.loadFromStorage('products', []);
 
                 const searchTerm = document.getElementById('productSelectSearch').value.toLowerCase();
                 const categoryFilter = document.getElementById('productSelectCategoryFilter').value;
@@ -2768,13 +2632,13 @@
                 }
             },
 
-            addSelectedProducts() {
+            async addSelectedProducts() {
                 if (this.selectedProducts.length === 0) {
                     this.showAlert('Lütfen en az bir ürün seçin!', 'error');
                     return;
                 }
 
-                const products = this.loadFromStorage('products', []);
+                const products = await this.loadFromStorage('products', []);
 
                 this.selectedProducts.forEach(productId => {
                     const product = products.find(p => p.id === productId);
@@ -2801,27 +2665,22 @@
             // ==============================================
             // QUOTE CREATION
             // ==============================================
-            generateQuoteNumber(shouldIncrement = false) {
+            async generateQuoteNumber(shouldIncrement = false) {
                 const year = new Date().getFullYear();
-                let counter = this.loadFromStorage('quoteCounter', 0);
-                
+                let counter = await this.loadFromStorage('quoteCounter', 0);
+
                 if (shouldIncrement) {
                     counter++;
-                    this.saveToStorage('quoteCounter', counter);
+                    await this.saveToStorage('quoteCounter', counter);
                 } else {
-                    // If no number exists, generate one but don't save yet
-                    if (counter === 0) {
-                        counter = 1;
-                    }
+                    if (counter === 0) counter = 1;
                 }
 
-                const quoteNumber = `TEK-${year}-${String(counter).padStart(3, '0')}`;
-                document.getElementById('quoteNumber').value = quoteNumber;
+                document.getElementById('quoteNumber').value = `TEK-${year}-${String(counter).padStart(3, '0')}`;
             },
 
-            addEmptyLineItem() {
-                const companySettings = this.loadFromStorage('companySettings', {});
-
+            async addEmptyLineItem() {
+                const companySettings = await this.loadFromStorage('companySettings', {});
                 this.currentQuote.items.push({
                     id: Date.now().toString() + Math.random(),
                     productId: null,
@@ -2833,12 +2692,11 @@
                     discount: 0,
                     currency: companySettings.defaultCurrency || 'TL'
                 });
-
                 this.renderQuoteItems();
             },
 
-            addOptionItem() {
-                const companySettings = this.loadFromStorage('companySettings', {});
+            async addOptionItem() {
+                const companySettings = await this.loadFromStorage('companySettings', {});
 
                 this.currentQuote.options.push({
                     id: Date.now().toString() + Math.random(),
@@ -2873,7 +2731,7 @@
                 this.renderQuoteItems();
             },
 
-            saveLineItemToLibrary(itemId) {
+            async saveLineItemToLibrary(itemId) {
                 const item = this.currentQuote.items.find(i => i.id === itemId);
                 if (!item) return;
 
@@ -2882,8 +2740,7 @@
                     return;
                 }
 
-                // Check if product already exists by name
-                let products = this.loadFromStorage('products', []);
+                let products = await this.loadFromStorage('products', []);
                 const existingProduct = products.find(p => p.name.toLowerCase() === item.name.toLowerCase().trim());
 
                 if (existingProduct) {
@@ -2905,8 +2762,7 @@
                 };
 
                 products.push(newProduct);
-                this.saveToStorage('products', products);
-
+                await this.saveToStorage('products', products);
                 this.showAlert(`✅ "${item.name}" ürün kütüphanesine eklendi!`);
             },
 
@@ -3109,17 +2965,10 @@
                 };
             },
 
-            saveQuote(status = 'draft') {
+            async saveQuote(status = 'draft') {
                 const customerCompany = document.getElementById('customerCompany').value.trim();
-                if (!customerCompany) {
-                    this.showAlert('Lütfen müşteri firma adını girin!', 'error');
-                    return;
-                }
-
-                if (this.currentQuote.items.length === 0) {
-                    this.showAlert('Lütfen en az bir ürün ekleyin!', 'error');
-                    return;
-                }
+                if (!customerCompany) { this.showAlert('Lütfen müşteri firma adını girin!', 'error'); return; }
+                if (this.currentQuote.items.length === 0) { this.showAlert('Lütfen en az bir ürün ekleyin!', 'error'); return; }
 
                 const quote = {
                     id: this.currentQuote.id || Date.now().toString(),
@@ -3146,29 +2995,26 @@
                     updatedAt: new Date().toISOString()
                 };
 
-                let quotes = this.loadFromStorage('quotes', []);
+                let quotes = await this.loadFromStorage('quotes', []);
                 const existingIndex = quotes.findIndex(q => q.id === quote.id);
 
                 if (existingIndex >= 0) {
-                    // Existing quote - just update, don't increment counter
                     quotes[existingIndex] = quote;
                     this.showAlert('✅ Teklif güncellendi!');
                 } else {
-                    // New quote - increment counter only if status is 'sent'
                     if (status === 'sent') {
                         const year = new Date().getFullYear();
-                        let counter = this.loadFromStorage('quoteCounter', 0);
+                        let counter = await this.loadFromStorage('quoteCounter', 0);
                         counter++;
-                        this.saveToStorage('quoteCounter', counter);
-                        const quoteNumber = `TEK-${year}-${String(counter).padStart(3, '0')}`;
-                        quote.number = quoteNumber;
-                        document.getElementById('quoteNumber').value = quoteNumber;
+                        await this.saveToStorage('quoteCounter', counter);
+                        quote.number = `TEK-${year}-${String(counter).padStart(3, '0')}`;
+                        document.getElementById('quoteNumber').value = quote.number;
                     }
                     quotes.push(quote);
                     this.showAlert('✅ Teklif kaydedildi!');
                 }
 
-                this.saveToStorage('quotes', quotes);
+                await this.saveToStorage('quotes', quotes);
                 this.currentQuote.id = quote.id;
             },
             
@@ -3358,14 +3204,14 @@
                 }
             },
 
-            previewQuote() {
+            async previewQuote() {
                 if (this.currentQuote.items.length === 0) {
                     this.showAlert('Önizleme için en az bir ürün ekleyin!', 'error');
                     return;
                 }
 
-                const companySettings = this.loadFromStorage('companySettings', {});
-                const logo = this.loadFromStorage('companyLogo', '');
+                const companySettings = await this.loadFromStorage('companySettings', {});
+                const logo = await this.loadFromStorage('companyLogo', '');
 
                 const quote = {
                     title: document.getElementById('quoteTitle').value,
@@ -3676,17 +3522,17 @@
             // ==============================================
             // QUOTE HISTORY
             // ==============================================
-            loadQuoteHistory() {
-                this.renderHistoryTable();
+            async loadQuoteHistory() {
+                await this.renderHistoryTable();
             },
 
-            filterHistory() {
-                this.renderHistoryTable();
+            async filterHistory() {
+                await this.renderHistoryTable();
             },
 
-            renderHistoryTable() {
+            async renderHistoryTable() {
                 const tbody = document.getElementById('historyTableBody');
-                let quotes = this.loadFromStorage('quotes', []);
+                let quotes = await this.loadFromStorage('quotes', []);
 
                 const searchTerm = document.getElementById('historySearch').value.toLowerCase();
                 const statusFilter = document.getElementById('historyStatusFilter').value;
@@ -3740,33 +3586,20 @@
                 }).join('');
             },
 
-            viewQuote(quoteId) {
-                const quotes = this.loadFromStorage('quotes', []);
+            async viewQuote(quoteId) {
+                const quotes = await this.loadFromStorage('quotes', []);
                 const quote = quotes.find(q => q.id === quoteId);
 
-                if (!quote) {
-                    this.showAlert('Teklif bulunamadı!', 'error');
-                    return;
-                }
-
-                // Ensure quote has required properties
+                if (!quote) { this.showAlert('Teklif bulunamadı!', 'error'); return; }
                 if (!quote.totals) {
-                    quote.totals = {
-                        subtotal: 0,
-                        totalDiscount: 0,
-                        totalVAT: 0,
-                        grandTotal: 0,
-                        currency: 'TL',
-                        vatRate: 20
-                    };
+                    quote.totals = { subtotal: 0, totalDiscount: 0, totalVAT: 0, grandTotal: 0, currency: 'TL', vatRate: 20 };
                 }
 
-                const companySettings = this.loadFromStorage('companySettings', {});
-                const logo = this.loadFromStorage('companyLogo', '');
+                const companySettings = await this.loadFromStorage('companySettings', {});
+                const logo = await this.loadFromStorage('companyLogo', '');
 
                 try {
                     const previewHtml = this.generateQuoteHTML(quote, companySettings, logo);
-
                     const modalHtml = `
                         <div id="viewQuoteModal" class="modal active">
                             <div class="modal-content" style="max-width: 1200px;">
@@ -3774,54 +3607,25 @@
                                     <h2>Teklif: ${this.escapeHtml(quote.number || '')}</h2>
                                     <button class="modal-close" onclick="document.getElementById('viewQuoteModal').remove()">&times;</button>
                                 </div>
-                                <div class="preview-container">
-                                    ${previewHtml}
-                                </div>
+                                <div class="preview-container">${previewHtml}</div>
                                 <div class="btn-group">
-                                    <button class="btn btn-primary" onclick="App.printQuoteInNewWindow('${quote.id}')">🖨️ Yazdır</button>
+                                    <button class="btn btn-primary" onclick="App.printQuoteById('${quote.id}')">🖨️ Yazdır</button>
                                     <button class="btn btn-secondary" onclick="document.getElementById('viewQuoteModal').remove()">✖️ Kapat</button>
                                 </div>
                             </div>
                         </div>
                     `;
-
                     document.body.insertAdjacentHTML('beforeend', modalHtml);
-                    
-                    // Generate QR Code after modal is rendered
-                    setTimeout(() => {
-                        this.generateQRCode(quote.id, companySettings.website);
-                    }, 100);
+                    setTimeout(() => this.generateQRCode(quote.id, companySettings.website), 100);
                 } catch (error) {
                     console.error('Teklif görüntüleme hatası:', error);
                     this.showAlert('Teklif görüntülenirken bir hata oluştu: ' + error.message, 'error');
                 }
             },
-            
-            generateQRCode(elementId, url) {
-                if (typeof QRCode === 'undefined' || !url) return;
-                
-                const qrElement = document.getElementById(`qrCode-${elementId}`);
-                if (!qrElement) return;
-                
-                // Clear existing QR code
-                qrElement.innerHTML = '';
-                
-                // Generate QR code
-                const qrUrl = url.startsWith('http') ? url : 'https://' + url;
-                new QRCode(qrElement, {
-                    text: qrUrl,
-                    width: 60,
-                    height: 60,
-                    colorDark: '#1e293b',
-                    colorLight: '#ffffff',
-                    correctLevel: QRCode.CorrectLevel.H
-                });
-            },
 
-            editQuote(quoteId) {
-                const quotes = this.loadFromStorage('quotes', []);
+            async editQuote(quoteId) {
+                const quotes = await this.loadFromStorage('quotes', []);
                 const quote = quotes.find(q => q.id === quoteId);
-
                 if (!quote) return;
 
                 this.currentQuote = {
@@ -3858,14 +3662,10 @@
                 this.showAlert(`Teklif düzenleme modunda: ${quote.number}`, 'success');
             },
 
-            duplicateQuote(quoteId) {
-                const quotes = this.loadFromStorage('quotes', []);
+            async duplicateQuote(quoteId) {
+                const quotes = await this.loadFromStorage('quotes', []);
                 const quote = quotes.find(q => q.id === quoteId);
-
-                if (!quote) {
-                    this.showAlert('Teklif bulunamadı!', 'error');
-                    return;
-                }
+                if (!quote) { this.showAlert('Teklif bulunamadı!', 'error'); return; }
 
                 this.currentQuote = {
                     id: null,
@@ -3918,14 +3718,11 @@
                     cancelButtonText: 'İptal'
                 });
                 
-                if (!result.isConfirmed) {
-                    return;
-                }
+                if (!result.isConfirmed) return;
 
-                let quotes = this.loadFromStorage('quotes', []);
+                let quotes = await this.loadFromStorage('quotes', []);
                 quotes = quotes.filter(q => q.id !== quoteId);
-
-                this.saveToStorage('quotes', quotes);
+                await this.saveToStorage('quotes', quotes);
                 this.renderHistoryTable();
                 this.showAlert('✅ Teklif silindi!');
             },
@@ -4290,170 +4087,61 @@
                 `;
             },
             
-            // Print in new window
-            printInNewWindow() {
-                const printContent = document.getElementById('quotePrintArea').innerHTML;
+            // Unified print function
+            openPrintWindow(content, title, qrElementId) {
                 const printWindow = window.open('', '_blank', 'width=800,height=600');
-                
                 if (!printWindow) {
                     this.showAlert('Pop-up engelleyici aktif. Lütfen izin verin.', 'error');
                     return;
                 }
-                
+
                 const companySettings = this.loadFromStorage('companySettings', {});
                 const styles = this.getPrintStyles();
-                printWindow.document.open();
-                const htmlContent = '<!DOCTYPE html><html lang="tr"><head><meta charset="UTF-8"><title>Teklif Yazdır</title><script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"><\/script>' + styles + '<\/head><body>' + printContent + '<\/body><\/html>';
-                printWindow.document.write(htmlContent);
+                printWindow.document.write(`<!DOCTYPE html><html lang="tr"><head><meta charset="UTF-8"><title>${title}</title><script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"><\/script>${styles}</head><body>${content}</body></html>`);
                 printWindow.document.close();
-                
-                // Wait for document to be ready
+
                 printWindow.onload = () => {
                     // Fix logo sizes
-                    const logos = printWindow.document.querySelectorAll('.pdf-header-logo, .pdf-footer-logo');
-                    logos.forEach(logo => {
-                        logo.style.maxWidth = '120px';
-                        logo.style.maxHeight = '40px';
-                        logo.style.width = 'auto';
-                        logo.style.height = 'auto';
-                        logo.style.objectFit = 'contain';
+                    printWindow.document.querySelectorAll('.pdf-header-logo, .pdf-footer-logo').forEach(logo => {
+                        Object.assign(logo.style, { maxWidth: '120px', maxHeight: '40px', width: 'auto', height: 'auto', objectFit: 'contain' });
                     });
-                    
-                    // Generate QR codes if needed
-                    if (companySettings.website) {
-                        const qrElement = printWindow.document.getElementById('qrCode-preview');
+
+                    // Generate QR code if needed
+                    if (companySettings.website && qrElementId) {
+                        const qrElement = printWindow.document.getElementById(`qrCode-${qrElementId}`);
                         if (qrElement && typeof QRCode !== 'undefined') {
                             const qrUrl = companySettings.website.startsWith('http') ? companySettings.website : 'https://' + companySettings.website;
-                            new QRCode(qrElement, {
-                                text: qrUrl,
-                                width: 60,
-                                height: 60,
-                                colorDark: '#1e293b',
-                                colorLight: '#ffffff',
-                                correctLevel: QRCode.CorrectLevel.H
-                            });
+                            new QRCode(qrElement, { text: qrUrl, width: 60, height: 60, colorDark: '#1e293b', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.H });
                         }
                     }
-                    
+
                     // Wait for images to load before printing
                     const images = printWindow.document.querySelectorAll('img');
                     let loadedCount = 0;
-                    const totalImages = images.length;
-                    
-                    const tryPrint = () => {
-                        if (loadedCount === totalImages) {
-                            setTimeout(() => printWindow.print(), 100);
-                        }
-                    };
-                    
-                    if (totalImages === 0) {
-                        tryPrint();
-                    } else {
+                    const tryPrint = () => { if (loadedCount === images.length) setTimeout(() => printWindow.print(), 100); };
+
+                    if (images.length === 0) { tryPrint(); }
+                    else {
                         images.forEach(img => {
-                            if (img.complete) {
-                                loadedCount++;
-                                tryPrint();
-                            } else {
-                                img.onload = () => {
-                                    loadedCount++;
-                                    tryPrint();
-                                };
-                                img.onerror = () => {
-                                    loadedCount++;
-                                    tryPrint();
-                                };
-                            }
+                            if (img.complete) { loadedCount++; tryPrint(); }
+                            else { img.onload = img.onerror = () => { loadedCount++; tryPrint(); }; }
                         });
                     }
                 };
             },
-            
-            printQuoteInNewWindow(quoteId) {
-                const quotes = this.loadFromStorage('quotes', []);
+
+            printInNewWindow() {
+                this.openPrintWindow(document.getElementById('quotePrintArea').innerHTML, 'Teklif Yazdır', 'preview');
+            },
+
+            async printQuoteById(quoteId) {
+                const quotes = await this.loadFromStorage('quotes', []);
                 const quote = quotes.find(q => q.id === quoteId);
-                
-                if (!quote) {
-                    this.showAlert('Teklif bulunamadı!', 'error');
-                    return;
-                }
-                
-                const companySettings = this.loadFromStorage('companySettings', {});
-                const logo = this.loadFromStorage('companyLogo', '');
-                const printContent = this.generateQuoteHTML(quote, companySettings, logo);
-                
-                const printWindow = window.open('', '_blank', 'width=800,height=600');
-                
-                if (!printWindow) {
-                    this.showAlert('Pop-up engelleyici aktif. Lütfen izin verin.', 'error');
-                    return;
-                }
-                
-                const escapedTitle = this.escapeHtml(quote.number);
-                const styles = this.getPrintStyles();
-                printWindow.document.open();
-                const htmlContent = '<!DOCTYPE html><html lang="tr"><head><meta charset="UTF-8"><title>Teklif Yazdır - ' + escapedTitle + '</title><script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"><\/script>' + styles + '<\/head><body>' + printContent + '<\/body><\/html>';
-                printWindow.document.write(htmlContent);
-                printWindow.document.close();
-                
-                // Wait for document to be ready
-                printWindow.onload = () => {
-                    // Fix logo sizes
-                    const logos = printWindow.document.querySelectorAll('.pdf-header-logo, .pdf-footer-logo');
-                    logos.forEach(logo => {
-                        logo.style.maxWidth = '120px';
-                        logo.style.maxHeight = '40px';
-                        logo.style.width = 'auto';
-                        logo.style.height = 'auto';
-                        logo.style.objectFit = 'contain';
-                    });
-                    
-                    // Generate QR codes if needed
-                    if (companySettings.website) {
-                        const qrElement = printWindow.document.getElementById(`qrCode-${quote.id}`);
-                        if (qrElement && typeof QRCode !== 'undefined') {
-                            const qrUrl = companySettings.website.startsWith('http') ? companySettings.website : 'https://' + companySettings.website;
-                            new QRCode(qrElement, {
-                                text: qrUrl,
-                                width: 60,
-                                height: 60,
-                                colorDark: '#1e293b',
-                                colorLight: '#ffffff',
-                                correctLevel: QRCode.CorrectLevel.H
-                            });
-                        }
-                    }
-                    
-                    // Wait for images to load before printing
-                    const images = printWindow.document.querySelectorAll('img');
-                    let loadedCount = 0;
-                    const totalImages = images.length;
-                    
-                    const tryPrint = () => {
-                        if (loadedCount === totalImages) {
-                            setTimeout(() => printWindow.print(), 100);
-                        }
-                    };
-                    
-                    if (totalImages === 0) {
-                        tryPrint();
-                    } else {
-                        images.forEach(img => {
-                            if (img.complete) {
-                                loadedCount++;
-                                tryPrint();
-                            } else {
-                                img.onload = () => {
-                                    loadedCount++;
-                                    tryPrint();
-                                };
-                                img.onerror = () => {
-                                    loadedCount++;
-                                    tryPrint();
-                                };
-                            }
-                        });
-                    }
-                };
+                if (!quote) { this.showAlert('Teklif bulunamadı!', 'error'); return; }
+
+                const companySettings = await this.loadFromStorage('companySettings', {});
+                const logo = await this.loadFromStorage('companyLogo', '');
+                this.openPrintWindow(this.generateQuoteHTML(quote, companySettings, logo), `Teklif Yazdır - ${this.escapeHtml(quote.number)}`, quote.id);
             },
 
             getCurrencySymbol(currency) {
