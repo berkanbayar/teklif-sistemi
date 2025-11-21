@@ -1168,7 +1168,8 @@
 
             <div class="form-group">
                 <label>Varsayılan Açıklamalar / Notlar</label>
-                <textarea id="companyDefaultNotes" rows="6" placeholder="- Anahtar teslim şekilde fiyatlandırma yapılmıştır.&#10;- Toplam bedelin %50'si iş başlangıcında avans olarak talep edilecektir.&#10;- Bedel, fatura kesiminden sonra 10 gün içinde ödenecektir."></textarea>
+                <div id="companyDefaultNotesEditor" style="height: 200px; margin-bottom: 10px;"></div>
+                <textarea id="companyDefaultNotes" style="display: none;"></textarea>
             </div>
 
             <div class="btn-group">
@@ -1666,8 +1667,9 @@
             </div>
 
             <div class="form-group" style="margin-top: 20px;">
-                <label>Detaylı Açıklama / Alt Kalemler (Her satır bir madde olacak)</label>
-                <textarea id="productDescription" rows="6" placeholder="• Alt detay 1&#10;• Alt detay 2&#10;• Alt detay 3"></textarea>
+                <label>Detaylı Açıklama / Alt Kalemler (Bold, italik ve liste formatlaması yapabilirsiniz)</label>
+                <div id="productDescriptionEditor" style="height: 200px; margin-bottom: 10px;"></div>
+                <textarea id="productDescription" style="display: none;"></textarea>
             </div>
 
             <input type="hidden" id="productEditId">
@@ -1853,8 +1855,10 @@
                 document.getElementById('showDiscountColumn').addEventListener('change', () => this.calculateTotals());
                 document.getElementById('showVATColumn').addEventListener('change', () => this.calculateTotals());
                 
-                // Initialize Quill editor for explanations
+                // Initialize Quill editors
                 this.initQuillEditor();
+                this.initCompanyNotesEditor();
+                this.initProductDescriptionEditor();
             },
             
             initQuillEditor() {
@@ -1879,6 +1883,56 @@
                     
                     // Store editor reference
                     this.quillEditor = quillEditor;
+                }
+            },
+            
+            initCompanyNotesEditor() {
+                if (typeof Quill !== 'undefined') {
+                    const notesEditor = new Quill('#companyDefaultNotesEditor', {
+                        theme: 'snow',
+                        modules: {
+                            toolbar: [
+                                ['bold', 'italic', 'underline'],
+                                [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                                ['clean']
+                            ]
+                        },
+                        placeholder: 'Varsayılan açıklamalarınızı buraya yazın. Bold, italik ve liste formatlaması yapabilirsiniz...'
+                    });
+                    
+                    // Sync Quill content to hidden textarea
+                    notesEditor.on('text-change', () => {
+                        const content = notesEditor.root.innerHTML;
+                        document.getElementById('companyDefaultNotes').value = content;
+                    });
+                    
+                    // Store editor reference
+                    this.companyNotesEditor = notesEditor;
+                }
+            },
+            
+            initProductDescriptionEditor() {
+                if (typeof Quill !== 'undefined') {
+                    const productEditor = new Quill('#productDescriptionEditor', {
+                        theme: 'snow',
+                        modules: {
+                            toolbar: [
+                                ['bold', 'italic', 'underline'],
+                                [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                                ['clean']
+                            ]
+                        },
+                        placeholder: 'Ürün açıklamasını buraya yazın. Bold, italik ve liste formatlaması yapabilirsiniz...'
+                    });
+                    
+                    // Sync Quill content to hidden textarea
+                    productEditor.on('text-change', () => {
+                        const content = productEditor.root.innerHTML;
+                        document.getElementById('productDescription').value = content;
+                    });
+                    
+                    // Store editor reference
+                    this.productDescriptionEditor = productEditor;
                 }
             },
 
@@ -2017,7 +2071,13 @@
                     document.getElementById('bankIBANEUR').value = settings.bankIBANEUR || '';
                     document.getElementById('defaultCurrency').value = settings.defaultCurrency || 'TL';
                     document.getElementById('defaultVAT').value = settings.defaultVAT || 20;
-                    document.getElementById('companyDefaultNotes').value = settings.defaultNotes || '';
+                    // Load default notes to Quill editor
+                    if (this.companyNotesEditor && settings.defaultNotes) {
+                        this.companyNotesEditor.root.innerHTML = settings.defaultNotes;
+                        document.getElementById('companyDefaultNotes').value = settings.defaultNotes;
+                    } else {
+                        document.getElementById('companyDefaultNotes').value = settings.defaultNotes || '';
+                    }
 
                     const logo = this.loadFromStorage('companyLogo');
                     if (logo) {
@@ -2126,7 +2186,13 @@
                     document.getElementById('bankIBANUSD').value = 'TR86 0020 9000 0188 0596 0000 02';
                     document.getElementById('defaultCurrency').value = 'USD';
                     document.getElementById('defaultVAT').value = 20;
-                    document.getElementById('companyDefaultNotes').value = '- Anahtar teslim şekilde fiyatlandırma yapılmıştır.\n- Toplam bedelin %50\'si iş başlangıcında avans olarak talep edilecektir.\n- Bedel, fatura kesiminden sonra 10 gün içinde banka havalesi yoluyla ödenecektir.';
+                    const defaultNotes = '<p>- Anahtar teslim şekilde fiyatlandırma yapılmıştır.</p><p>- Toplam bedelin %50\'si iş başlangıcında avans olarak talep edilecektir.</p><p>- Bedel, fatura kesiminden sonra 10 gün içinde banka havalesi yoluyla ödenecektir.</p>';
+                    if (this.companyNotesEditor) {
+                        this.companyNotesEditor.root.innerHTML = defaultNotes;
+                        document.getElementById('companyDefaultNotes').value = defaultNotes;
+                    } else {
+                        document.getElementById('companyDefaultNotes').value = defaultNotes;
+                    }
 
                     this.showAlert('Varsayılan ayarlar yüklendi. Kaydetmeyi unutmayın!', 'success');
                 }
@@ -2248,7 +2314,13 @@
                         document.getElementById('productUnit').value = product.unit;
                         document.getElementById('productPrice').value = product.price;
                         document.getElementById('productCurrency').value = product.currency;
-                        document.getElementById('productDescription').value = product.description;
+                        // Load product description to Quill editor
+                        if (this.productDescriptionEditor) {
+                            this.productDescriptionEditor.root.innerHTML = product.description || '';
+                            document.getElementById('productDescription').value = product.description || '';
+                        } else {
+                            document.getElementById('productDescription').value = product.description || '';
+                        }
                         document.getElementById('productEditId').value = productId;
                         
                         // Load machine-specific fields
@@ -2285,7 +2357,13 @@
 
                     const companySettings = this.loadFromStorage('companySettings', {});
                     document.getElementById('productCurrency').value = companySettings.defaultCurrency || 'TL';
-                    document.getElementById('productDescription').value = '';
+                    // Clear product description editor
+                    if (this.productDescriptionEditor) {
+                        this.productDescriptionEditor.root.innerHTML = '';
+                        document.getElementById('productDescription').value = '';
+                    } else {
+                        document.getElementById('productDescription').value = '';
+                    }
                     document.getElementById('productEditId').value = '';
                     
                     // Clear machine fields
@@ -2930,7 +3008,7 @@
                     <tr>
                         <td>${index + 1}</td>
                         <td><input type="text" value="${this.escapeHtml(item.name)}" onchange="App.updateLineItem('${item.id}', 'name', this.value)" style="width: 100%; padding: 5px; border: 1px solid var(--border-color); border-radius: 4px;"></td>
-                        <td><textarea onchange="App.updateLineItem('${item.id}', 'description', this.value)" style="width: 100%; padding: 5px; border: 1px solid var(--border-color); border-radius: 4px; min-height: 60px;">${this.escapeHtml(item.description)}</textarea></td>
+                        <td><div contenteditable="true" onblur="App.updateLineItem('${item.id}', 'description', this.innerHTML)" style="width: 100%; padding: 5px; border: 1px solid var(--border-color); border-radius: 4px; min-height: 60px; background: white;">${item.description || ''}</div></td>
                         <td><input type="number" value="${item.quantity}" onchange="App.updateLineItem('${item.id}', 'quantity', this.value)" style="width: 100%; padding: 5px; border: 1px solid var(--border-color); border-radius: 4px;" step="1" min="0"></td>
                         <td><input type="text" value="${this.escapeHtml(item.unit)}" onchange="App.updateLineItem('${item.id}', 'unit', this.value)" style="width: 100%; padding: 5px; border: 1px solid var(--border-color); border-radius: 4px;"></td>
                         <td><input type="number" value="${item.price}" onchange="App.updateLineItem('${item.id}', 'price', this.value)" style="width: 100%; padding: 5px; border: 1px solid var(--border-color); border-radius: 4px;" step="0.01" min="0"></td>
@@ -3401,7 +3479,21 @@
                                     const itemSubtotal = item.quantity * item.price;
                                     const discountAmount = itemSubtotal * ((item.discount || 0) / 100);
                                     const netTotal = itemSubtotal - discountAmount;
-                                    const details = item.description.split('\n').filter(line => line.trim());
+                                    
+                                    // Check if description is HTML format (contains HTML tags)
+                                    const isHTML = item.description && (item.description.includes('<p>') || item.description.includes('<ul>') || item.description.includes('<li>') || item.description.includes('<strong>') || item.description.includes('<em>'));
+                                    let descriptionHTML = '';
+                                    
+                                    if (isHTML) {
+                                        // Use HTML directly
+                                        descriptionHTML = item.description;
+                                    } else {
+                                        // Convert plain text to HTML
+                                        const details = item.description ? item.description.split('\n').filter(line => line.trim()) : [];
+                                        if (details.length > 0) {
+                                            descriptionHTML = `<ul style="margin: 0; padding-left: 20px;">${details.map(line => `<li style="margin: 2px 0;">${this.escapeHtml(line.replace(/^[•\-\*]\s*/, ''))}</li>`).join('')}</ul>`;
+                                        }
+                                    }
 
                                     return `
                                         <tr class="main-item-row">
@@ -3411,7 +3503,7 @@
                                         <tr class="detail-row">
                                             <td style="vertical-align: middle;"></td>
                                             <td style="vertical-align: middle;">
-                                                ${details.length > 0 ? `<ul style="margin: 0; padding-left: 20px;">${details.map(line => `<li style="margin: 2px 0;">${this.escapeHtml(line.replace(/^[•\-\*]\s*/, ''))}</li>`).join('')}</ul>` : ''}
+                                                ${descriptionHTML}
                                             </td>
                                             <td class="text-right" style="vertical-align: middle;">${item.quantity}</td>
                                             ${quote.showDiscount ? `<td class="text-right" style="vertical-align: middle;">${this.formatNumber(item.price)} ${this.getCurrencySymbol(item.currency)}</td>` : ''}
