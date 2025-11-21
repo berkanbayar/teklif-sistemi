@@ -499,8 +499,9 @@
         }
 
         .pdf-header-logo {
-            max-width: 180px;
-            max-height: 60px;
+            max-width: 120px;
+            max-height: 40px;
+            margin-right: 20px;
         }
 
         .pdf-header-text {
@@ -585,9 +586,9 @@
         }
 
         .quote-items-table-pdf td {
-            padding: 8px;
+            padding: 10px 8px;
             border: 1px solid var(--border-color);
-            vertical-align: top;
+            vertical-align: middle;
         }
 
         .quote-items-table-pdf .main-item-row td {
@@ -620,18 +621,28 @@
         .quote-totals-box-pdf {
             width: 350px;
             font-size: 10pt;
+            background-color: #f9fafb;
+            padding: 15px;
+            border: 2px solid var(--primary-color);
+            border-radius: 6px;
         }
 
         .quote-totals-row {
             display: flex;
             justify-content: space-between;
-            padding: 8px 15px;
+            padding: 10px 15px;
             border-bottom: 1px solid var(--border-color);
+            font-weight: 600;
         }
 
         .quote-totals-row:last-child {
             background-color: #f0f0f0;
             font-weight: bold;
+            font-size: 12pt;
+            border-bottom: none;
+            border-top: 2px solid var(--primary-color);
+            margin-top: 5px;
+            padding-top: 15px;
             font-size: 12pt;
             border: 2px solid var(--text-dark);
         }
@@ -824,6 +835,8 @@
 
             @page {
                 margin: 1.5cm;
+                margin-top: 3cm;
+                margin-bottom: 2.5cm;
                 size: A4 portrait;
             }
             
@@ -837,10 +850,30 @@
                 }
             }
             
+            /* Repeat header and footer on each page */
+            @page {
+                @top-center {
+                    content: element(header);
+                }
+                @bottom-center {
+                    content: element(footer);
+                }
+            }
+            
             /* Alternative method - hide browser print headers */
             @media print {
                 @page {
                     margin: 1.5cm;
+                    margin-top: 3cm;
+                    margin-bottom: 2.5cm;
+                }
+                
+                .pdf-header {
+                    position: running(header);
+                }
+                
+                .pdf-footer {
+                    position: running(footer);
                 }
             }
 
@@ -3101,12 +3134,11 @@
                 return `
                     <div class="quote-preview">
                         <!-- PDF Header -->
-                        <div class="pdf-header">
+                        <div class="pdf-header" id="quote-header-${quote.id || 'preview'}">
                             ${logo ? `<img src="${logo}" class="pdf-header-logo">` : ''}
                             <div class="pdf-header-text">
                                 <h1>${this.escapeHtml(companySettings.name || 'ŞİRKET ADI')}</h1>
                                 ${companySettings.tagline ? `<div class="tagline">${this.escapeHtml(companySettings.tagline)}</div>` : ''}
-                                ${companySettings.address ? `<div class="pdf-header-address" style="margin-top: 8px; font-size: 9pt; color: var(--text-light);">${this.escapeHtml(companySettings.address)}</div>` : ''}
                             </div>
                             ${companySettings.website ? `<div id="qrCode-${quote.id || 'preview'}" class="pdf-header-qr" style="width: 60px; height: 60px;"></div>` : ''}
                         </div>
@@ -3167,14 +3199,14 @@
                                             <td colspan="${quote.showDiscount ? '5' : '3'}"><strong>${this.escapeHtml(item.name)}</strong></td>
                                         </tr>
                                         <tr class="detail-row">
-                                            <td></td>
-                                            <td>
-                                                ${details.length > 0 ? `<ul>${details.map(line => `<li>${this.escapeHtml(line.replace(/^[•\-\*]\s*/, ''))}</li>`).join('')}</ul>` : ''}
+                                            <td style="vertical-align: middle;"></td>
+                                            <td style="vertical-align: middle;">
+                                                ${details.length > 0 ? `<ul style="margin: 0; padding-left: 20px;">${details.map(line => `<li style="margin: 2px 0;">${this.escapeHtml(line.replace(/^[•\-\*]\s*/, ''))}</li>`).join('')}</ul>` : ''}
                                             </td>
-                                            <td class="text-right">${item.quantity}</td>
-                                            ${quote.showDiscount ? `<td class="text-right">${this.formatNumber(item.price)} ${this.getCurrencySymbol(item.currency)}</td>` : ''}
-                                            ${quote.showDiscount ? `<td class="text-right">${item.discount || 0}%</td>` : ''}
-                                            <td class="text-right">${this.formatNumber(netTotal)} ${this.getCurrencySymbol(item.currency)}</td>
+                                            <td class="text-right" style="vertical-align: middle;">${item.quantity}</td>
+                                            ${quote.showDiscount ? `<td class="text-right" style="vertical-align: middle;">${this.formatNumber(item.price)} ${this.getCurrencySymbol(item.currency)}</td>` : ''}
+                                            ${quote.showDiscount ? `<td class="text-right" style="vertical-align: middle;">${item.discount || 0}%</td>` : ''}
+                                            <td class="text-right" style="vertical-align: middle; font-weight: bold;">${this.formatNumber(netTotal)} ${this.getCurrencySymbol(item.currency)}</td>
                                         </tr>
                                     `;
                                 }).join('')}
@@ -3283,9 +3315,10 @@
                         ` : ''}
 
                         <!-- PDF Footer -->
-                        <div class="pdf-footer" style="margin-top: 50px;">
+                        <div class="pdf-footer" id="quote-footer-${quote.id || 'preview'}" style="margin-top: 50px;">
                             <div class="pdf-footer-left">
                                 ${logo ? `<img src="${logo}" class="pdf-footer-logo">` : ''}
+                                ${companySettings.address ? `<div style="margin-left: 15px; font-size: 9pt; color: var(--text-light);">${this.escapeHtml(companySettings.address)}</div>` : ''}
                             </div>
                             <div class="pdf-footer-right">
                                 <div>☎ ${this.escapeHtml(companySettings.phone || '')}</div>
