@@ -1172,8 +1172,6 @@
                     <button class="btn btn-success" onclick="App.saveQuote('draft')" data-tooltip="Teklifi taslak olarak kaydet">💾 Taslak Olarak Kaydet</button>
                     <button class="btn btn-primary" onclick="App.saveQuote('sent')" data-tooltip="Teklifi kaydet ve gönderildi olarak işaretle">✉️ Kaydet ve Gönderildi İşaretle</button>
                     <button class="btn btn-secondary" onclick="App.previewQuote()" data-tooltip="Teklif önizlemesini göster">👁️ Önizleme & Yazdır</button>
-                    <button class="btn btn-info" onclick="App.exportQuote()" data-tooltip="Teklifi JSON olarak export et">📥 Export (JSON)</button>
-                    <button class="btn btn-info" onclick="App.importQuote()" data-tooltip="JSON dosyasından teklif import et">📤 Import (JSON)</button>
                     <button class="btn btn-danger" onclick="App.clearQuote()" data-tooltip="Formu temizle">🗑️ Formu Temizle</button>
                 </div>
             </div>
@@ -1329,8 +1327,6 @@
                 <button class="btn btn-success" onclick="App.saveQuote('draft')">💾 Taslak Olarak Kaydet</button>
                 <button class="btn btn-primary" onclick="App.saveQuote('sent')">✉️ Kaydet ve Gönderildi İşaretle</button>
                 <button class="btn btn-secondary" onclick="App.previewQuote()">👁️ Önizleme & Yazdır</button>
-                <button class="btn btn-info" onclick="App.exportQuote()">📥 Export (JSON)</button>
-                <button class="btn btn-info" onclick="App.importQuote()">📤 Import (JSON)</button>
                 <button class="btn btn-danger" onclick="App.clearQuote()">🗑️ Formu Temizle</button>
             </div>
 
@@ -3754,7 +3750,7 @@
                     totals: quote.totals ? JSON.parse(JSON.stringify(quote.totals)) : null
                 };
 
-                this.generateQuoteNumber();
+                await this.generateQuoteNumber(true);
 
                 const today = new Date().toISOString().split('T')[0];
                 document.getElementById('quoteDate').value = today;
