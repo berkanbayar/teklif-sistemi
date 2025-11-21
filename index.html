@@ -4211,9 +4211,8 @@
                 const companySettings = this.loadFromStorage('companySettings', {});
                 const styles = this.getPrintStyles();
                 printWindow.document.open();
-                const htmlContent = '<!DOCTYPE html><html lang="tr"><head><meta charset="UTF-8"><title>Teklif Yazdır</title><script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"><\/script>' + styles + '<\/head><body>';
+                const htmlContent = '<!DOCTYPE html><html lang="tr"><head><meta charset="UTF-8"><title>Teklif Yazdır</title><script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"><\/script>' + styles + '<\/head><body>' + printContent + '<\/body><\/html>';
                 printWindow.document.write(htmlContent);
-                printWindow.document.body.innerHTML = printContent;
                 printWindow.document.close();
                 
                 // Wait for document to be ready
@@ -4300,9 +4299,8 @@
                 const escapedTitle = this.escapeHtml(quote.number);
                 const styles = this.getPrintStyles();
                 printWindow.document.open();
-                const htmlContent = '<!DOCTYPE html><html lang="tr"><head><meta charset="UTF-8"><title>Teklif Yazdır - ' + escapedTitle + '</title><script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"><\/script>' + styles + '<\/head><body>';
+                const htmlContent = '<!DOCTYPE html><html lang="tr"><head><meta charset="UTF-8"><title>Teklif Yazdır - ' + escapedTitle + '</title><script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"><\/script>' + styles + '<\/head><body>' + printContent + '<\/body><\/html>';
                 printWindow.document.write(htmlContent);
-                printWindow.document.body.innerHTML = printContent;
                 printWindow.document.close();
                 
                 // Wait for document to be ready
