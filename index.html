@@ -1868,6 +1868,7 @@
                     this.renderHistoryTable();
                 } else if (sectionId === 'yeni-teklif') {
                     this.generateQuoteNumber();
+                    this.loadDefaultNotesIfEmpty();
                 }
             },
 
@@ -3015,7 +3016,25 @@
                 this.generateQuoteNumber();
                 this.renderQuoteItems();
                 this.renderQuoteOptions();
+                this.loadDefaultNotesIfEmpty();
                 this.showAlert('Form temizlendi.');
+            },
+            
+            loadDefaultNotesIfEmpty() {
+                // Load default notes if explanations field is empty
+                const currentExplanations = this.quillEditor ? this.quillEditor.root.innerHTML : document.getElementById('quoteExplanations').value;
+                
+                if (!currentExplanations || currentExplanations.trim() === '' || currentExplanations === '<p><br></p>') {
+                    const companySettings = this.loadFromStorage('companySettings', {});
+                    if (companySettings.defaultNotes && companySettings.defaultNotes.trim()) {
+                        if (this.quillEditor) {
+                            this.quillEditor.root.innerHTML = companySettings.defaultNotes;
+                            document.getElementById('quoteExplanations').value = companySettings.defaultNotes;
+                        } else {
+                            document.getElementById('quoteExplanations').value = companySettings.defaultNotes;
+                        }
+                    }
+                }
             },
 
             previewQuote() {
@@ -3097,14 +3116,14 @@
 
                         <!-- Scope Section (if exists) -->
                         ${quote.scope && quote.scope.trim() ? `
-                        <div class="quote-scope-section">
+                        <div class="quote-scope-section" style="margin-top: 30px; margin-bottom: 30px;">
                             <h3>Teklif Konusu ve Kapsam</h3>
                             <p>${this.escapeHtml(quote.scope)}</p>
                         </div>
                         ` : ''}
 
                         <!-- Compact Customer Info -->
-                        <div class="quote-customer-compact">
+                        <div class="quote-customer-compact" style="margin-top: 20px; margin-bottom: 30px;">
                             <div class="info-item">
                                 <strong>Teklif Verilen Firma</strong>
                                 <span>${this.escapeHtml(quote.customer.company)}</span>
@@ -3161,9 +3180,10 @@
                                 }).join('')}
                             </tbody>
                         </table>
+                        </div>
 
                         <!-- Totals -->
-                        <div class="quote-totals-pdf">
+                        <div class="quote-totals-pdf" style="margin-top: 30px; margin-bottom: 30px;">
                             <div class="quote-totals-box-pdf">
                                 <div class="quote-totals-row">
                                     <span>Ara Toplam</span>
@@ -3195,7 +3215,8 @@
 
                         <!-- Options Section -->
                         ${quote.options && quote.options.length > 0 ? `
-                        <h3 style="margin-top: 40px; margin-bottom: 15px; font-size: 14pt;">OPSİYONLAR</h3>
+                        <div style="margin-top: 40px; margin-bottom: 20px;">
+                        <h3 style="margin-bottom: 15px; font-size: 14pt;">OPSİYONLAR</h3>
                         <table class="quote-items-table-pdf">
                             <thead>
                                 <tr>
@@ -3222,11 +3243,12 @@
                                 }).join('')}
                             </tbody>
                         </table>
+                        </div>
                         ` : ''}
 
                         <!-- Bank Info -->
                         ${(companySettings.bankAccounts && companySettings.bankAccounts.length > 0) || companySettings.bankName ? `
-                        <div class="quote-bank-info">
+                        <div class="quote-bank-info" style="margin-top: 40px; margin-bottom: 30px;">
                             <h3>Ödeme Bilgileri</h3>
                             ${companySettings.bankAccounts && companySettings.bankAccounts.length > 0 ? 
                                 companySettings.bankAccounts.map(account => `
@@ -3249,7 +3271,7 @@
 
                         <!-- Explanations -->
                         ${quote.explanations ? `
-                        <div class="quote-notes-section">
+                        <div class="quote-notes-section" style="margin-top: 40px; margin-bottom: 30px;">
                             <div class="quote-notes-header" style="font-size: 14pt; font-weight: bold; margin-bottom: 15px; color: var(--primary-color); border-bottom: 2px solid var(--primary-color); padding-bottom: 5px;">Açıklamalar</div>
                             <div style="font-size: 10pt; line-height: 1.8;">
                                 ${quote.explanations.includes('<') ? quote.explanations : quote.explanations.split('\n').filter(line => line.trim()).map(line =>
@@ -3261,7 +3283,7 @@
                         ` : ''}
 
                         <!-- PDF Footer -->
-                        <div class="pdf-footer">
+                        <div class="pdf-footer" style="margin-top: 50px;">
                             <div class="pdf-footer-left">
                                 ${logo ? `<img src="${logo}" class="pdf-footer-logo">` : ''}
                             </div>
@@ -3273,7 +3295,7 @@
                         </div>
                         
                         <!-- Signature and Seal Section -->
-                        <div class="quote-signature-section" style="margin-top: 50px; padding-top: 30px; border-top: 2px solid var(--border-color); page-break-inside: avoid;">
+                        <div class="quote-signature-section" style="margin-top: 60px; padding-top: 40px; border-top: 2px solid var(--border-color); page-break-inside: avoid;">
                             <div style="display: flex; justify-content: space-between; align-items: flex-end;">
                                 <div style="flex: 1;">
                                     <div style="margin-bottom: 40px; min-height: 80px; border-bottom: 1px solid var(--border-color);">
