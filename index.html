@@ -2024,7 +2024,92 @@
                         document.getElementById('logoPreview').style.display = 'block';
                         document.getElementById('logoPreviewImg').src = logo;
                     }
+                    
+                    // Load bank accounts
+                    if (settings.bankAccounts && settings.bankAccounts.length > 0) {
+                        this.renderBankAccounts(settings.bankAccounts);
+                    }
                 }
+            },
+            
+            addBankAccount() {
+                const accountId = 'bank_' + Date.now();
+                const bankAccounts = this.getBankAccounts();
+                bankAccounts.push({
+                    id: accountId,
+                    bankName: '',
+                    accountName: '',
+                    currency: 'TL',
+                    iban: ''
+                });
+                this.renderBankAccounts(bankAccounts);
+            },
+            
+            removeBankAccount(accountId) {
+                if (!confirm('Bu banka hesabını silmek istediğinize emin misiniz?')) {
+                    return;
+                }
+                const bankAccounts = this.getBankAccounts();
+                const filtered = bankAccounts.filter(acc => acc.id !== accountId);
+                this.renderBankAccounts(filtered);
+            },
+            
+            getBankAccounts() {
+                const bankAccounts = [];
+                const bankAccountElements = document.querySelectorAll('.bank-account-item');
+                bankAccountElements.forEach(item => {
+                    const accountId = item.dataset.accountId;
+                    bankAccounts.push({
+                        id: accountId,
+                        bankName: document.getElementById(`bankName_${accountId}`).value,
+                        accountName: document.getElementById(`bankAccountName_${accountId}`).value,
+                        currency: document.getElementById(`bankCurrency_${accountId}`).value,
+                        iban: document.getElementById(`bankIBAN_${accountId}`).value
+                    });
+                });
+                return bankAccounts;
+            },
+            
+            renderBankAccounts(bankAccounts) {
+                const container = document.getElementById('bankAccountsList');
+                if (!container) return;
+                
+                if (bankAccounts.length === 0) {
+                    container.innerHTML = '<p style="color: var(--text-light); font-style: italic;">Henüz banka hesabı eklenmedi.</p>';
+                    return;
+                }
+                
+                container.innerHTML = bankAccounts.map((account, index) => `
+                    <div class="bank-account-item" data-account-id="${account.id}" style="border: 2px solid var(--border-color); padding: 15px; margin-bottom: 15px; border-radius: 6px; background-color: #f9fafb;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                            <h4 style="margin: 0; color: var(--primary-color);">Banka Hesabı ${index + 1}</h4>
+                            <button type="button" class="btn btn-small btn-danger" onclick="App.removeBankAccount('${account.id}')">🗑️ Sil</button>
+                        </div>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>Banka Adı</label>
+                                <input type="text" id="bankName_${account.id}" value="${this.escapeHtml(account.bankName || '')}" placeholder="Ziraat Bankası">
+                            </div>
+                            <div class="form-group">
+                                <label>Hesap Adı</label>
+                                <input type="text" id="bankAccountName_${account.id}" value="${this.escapeHtml(account.accountName || '')}" placeholder="Firma Adı">
+                            </div>
+                            <div class="form-group">
+                                <label>Para Birimi</label>
+                                <select id="bankCurrency_${account.id}" style="width: 100%; padding: 10px; border: 2px solid var(--border-color); border-radius: 6px;">
+                                    <option value="TL" ${account.currency === 'TL' ? 'selected' : ''}>TL</option>
+                                    <option value="USD" ${account.currency === 'USD' ? 'selected' : ''}>USD</option>
+                                    <option value="EUR" ${account.currency === 'EUR' ? 'selected' : ''}>EUR</option>
+                                    <option value="GBP" ${account.currency === 'GBP' ? 'selected' : ''}>GBP</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>IBAN</label>
+                                <input type="text" id="bankIBAN_${account.id}" value="${this.escapeHtml(account.iban || '')}" placeholder="TR00 0000 0000 0000 0000 0000 00">
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
             },
 
             loadDefaultCompanySettings() {
