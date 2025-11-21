@@ -1243,6 +1243,7 @@
             <div class="btn-group">
                 <button class="btn btn-primary" onclick="App.showProductSelectModal()">📦 Ürün Kütüphanesinden Ekle</button>
                 <button class="btn btn-secondary" onclick="App.addEmptyLineItem()">➕ Boş Satır Ekle</button>
+                <button class="btn btn-warning" onclick="App.syncProductsFromLibrary()" data-tooltip="Teklifteki ürünleri kütüphaneden güncelle">🔄 Ürünleri Güncelle</button>
             </div>
 
             <div class="table-container" style="margin-top: 20px;">
@@ -1250,7 +1251,7 @@
                     <thead>
                         <tr>
                             <th style="width: 40px;">Sıra</th>
-                            <th>Ürün Adı</th>
+                            <th style="width: 180px;">Ürün Adı</th>
                             <th>Detaylar (Alt Kalemler)</th>
                             <th style="width: 80px;">Miktar</th>
                             <th style="width: 80px;">Birim</th>
@@ -1796,7 +1797,7 @@
             // ==============================================
             // NAVIGATION
             // ==============================================
-            showSection(sectionId) {
+            showSection(sectionId, skipClear = false) {
                 document.querySelectorAll('.section').forEach(section => {
                     section.classList.remove('active');
                 });
@@ -1806,7 +1807,12 @@
                 });
 
                 document.getElementById(sectionId).classList.add('active');
-                event.target.classList.add('active');
+                if (event && event.target) event.target.classList.add('active');
+
+                // Yeni teklif sekmesine geçerken formu temizle (düzenleme modunda değilse)
+                if (sectionId === 'yeni-teklif' && !skipClear && !this.editingQuoteId) {
+                    this.resetQuoteForm();
+                }
 
                 this.currentSection = sectionId;
 
@@ -2695,6 +2701,40 @@
                 this.renderQuoteItems();
             },
 
+            async syncProductsFromLibrary() {
+                const products = await this.loadFromStorage('products', []);
+                if (products.length === 0) {
+                    this.showAlert('Ürün kütüphanesi boş.', 'error');
+                    return;
+                }
+                if (this.currentQuote.items.length === 0) {
+                    this.showAlert('Teklifte güncellenecek ürün yok.', 'error');
+                    return;
+                }
+
+                let updatedCount = 0;
+                this.currentQuote.items.forEach(item => {
+                    if (item.productId) {
+                        const libraryProduct = products.find(p => p.id === item.productId);
+                        if (libraryProduct) {
+                            item.name = libraryProduct.name;
+                            item.description = libraryProduct.description || '';
+                            item.price = libraryProduct.price;
+                            item.unit = libraryProduct.unit || 'Adet';
+                            item.currency = libraryProduct.currency || 'TL';
+                            updatedCount++;
+                        }
+                    }
+                });
+
+                if (updatedCount > 0) {
+                    this.renderQuoteItems();
+                    this.showAlert(`${updatedCount} ürün kütüphaneden güncellendi.`, 'success');
+                } else {
+                    this.showAlert('Kütüphanede eşleşen ürün bulunamadı.', 'warning');
+                }
+            },
+
             async addOptionItem() {
                 const companySettings = await this.loadFromStorage('companySettings', {});
 
@@ -3139,6 +3179,40 @@
                 input.click();
             },
 
+            // Formu onaysız temizle (sekme değişiminde kullanılır)
+            resetQuoteForm() {
+                this.currentQuote = {
+                    id: null,
+                    items: [],
+                    options: [],
+                    status: 'draft',
+                    showDiscount: false,
+                    showVAT: true
+                };
+                this.editingQuoteId = null;
+
+                document.getElementById('quoteTitle').value = '';
+                document.getElementById('quoteScope').value = '';
+                document.getElementById('customerCompany').value = '';
+                document.getElementById('customerContact').value = '';
+                document.getElementById('customerPhone').value = '';
+                document.getElementById('customerEmail').value = '';
+                document.getElementById('quoteExplanations').value = '';
+                if (this.quillEditor) {
+                    this.quillEditor.root.innerHTML = '';
+                }
+                document.getElementById('showDiscountColumn').checked = false;
+                document.getElementById('showVATColumn').checked = true;
+
+                const today = new Date().toISOString().split('T')[0];
+                document.getElementById('quoteDate').value = today;
+
+                this.generateQuoteNumber();
+                this.renderQuoteItems();
+                this.renderQuoteOptions();
+                this.loadDefaultNotesIfEmpty();
+            },
+
             async clearQuote() {
                 const result = await Swal.fire({
                     title: 'Emin misiniz?',
@@ -3150,7 +3224,7 @@
                     confirmButtonText: 'Evet, Temizle',
                     cancelButtonText: 'İptal'
                 });
-                
+
                 if (!result.isConfirmed) {
                     return;
                 }
@@ -3652,7 +3726,7 @@
 
                 this.renderQuoteItems();
                 this.renderQuoteOptions();
-                this.showSection('yeni-teklif');
+                this.showSection('yeni-teklif', true); // skipClear=true
 
                 document.querySelectorAll('.nav-tab').forEach(tab => {
                     tab.classList.remove('active');
@@ -3696,7 +3770,7 @@
 
                 this.renderQuoteItems();
                 this.renderQuoteOptions();
-                this.showSection('yeni-teklif');
+                this.showSection('yeni-teklif', true); // skipClear=true
 
                 document.querySelectorAll('.nav-tab').forEach(tab => {
                     tab.classList.remove('active');
@@ -4049,10 +4123,15 @@
                         @media print {
                             @page {
                                 margin: 1.5cm;
-                                margin-top: 3cm;
-                                margin-bottom: 2.5cm;
+                                margin-top: 1.5cm;
+                                margin-bottom: 1.5cm;
                                 size: A4 portrait;
                             }
+
+                            /* Hide browser header/footer */
+                            @page :first { margin-top: 1.5cm; }
+                            @page :left { margin-left: 1.5cm; }
+                            @page :right { margin-right: 1.5cm; }
                             
                             body {
                                 margin: 0;
