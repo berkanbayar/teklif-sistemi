@@ -1322,6 +1322,8 @@
                     <button class="btn btn-success" onclick="App.saveQuote('draft')" data-tooltip="Teklifi taslak olarak kaydet">💾 Taslak Olarak Kaydet</button>
                     <button class="btn btn-primary" onclick="App.saveQuote('sent')" data-tooltip="Teklifi kaydet ve gönderildi olarak işaretle">✉️ Kaydet ve Gönderildi İşaretle</button>
                     <button class="btn btn-secondary" onclick="App.previewQuote()" data-tooltip="Teklif önizlemesini göster">👁️ Önizleme & Yazdır</button>
+                    <button class="btn btn-info" onclick="App.exportQuote()" data-tooltip="Teklifi JSON olarak export et">📥 Export (JSON)</button>
+                    <button class="btn btn-info" onclick="App.importQuote()" data-tooltip="JSON dosyasından teklif import et">📤 Import (JSON)</button>
                     <button class="btn btn-danger" onclick="App.clearQuote()" data-tooltip="Formu temizle">🗑️ Formu Temizle</button>
                 </div>
             </div>
@@ -1476,6 +1478,8 @@
                 <button class="btn btn-success" onclick="App.saveQuote('draft')">💾 Taslak Olarak Kaydet</button>
                 <button class="btn btn-primary" onclick="App.saveQuote('sent')">✉️ Kaydet ve Gönderildi İşaretle</button>
                 <button class="btn btn-secondary" onclick="App.previewQuote()">👁️ Önizleme & Yazdır</button>
+                <button class="btn btn-info" onclick="App.exportQuote()">📥 Export (JSON)</button>
+                <button class="btn btn-info" onclick="App.importQuote()">📤 Import (JSON)</button>
                 <button class="btn btn-danger" onclick="App.clearQuote()">🗑️ Formu Temizle</button>
             </div>
 
@@ -3004,6 +3008,127 @@
                 this.saveToStorage('quotes', quotes);
                 this.currentQuote.id = quote.id;
             },
+            
+            // Export quote as JSON
+            exportQuote() {
+                if (this.currentQuote.items.length === 0) {
+                    this.showAlert('Export için en az bir ürün ekleyin!', 'error');
+                    return;
+                }
+                
+                const companySettings = this.loadFromStorage('companySettings', {});
+                const quote = {
+                    title: document.getElementById('quoteTitle').value,
+                    number: document.getElementById('quoteNumber').value,
+                    date: document.getElementById('quoteDate').value,
+                    validityDays: parseInt(document.getElementById('quoteValidityDays').value),
+                    scope: document.getElementById('quoteScope').value,
+                    customer: {
+                        company: document.getElementById('customerCompany').value,
+                        contact: document.getElementById('customerContact').value,
+                        phone: document.getElementById('customerPhone').value,
+                        email: document.getElementById('customerEmail').value
+                    },
+                    items: this.currentQuote.items,
+                    options: this.currentQuote.options,
+                    explanations: document.getElementById('quoteExplanations').value,
+                    totals: this.currentQuote.totals,
+                    showDiscount: document.getElementById('showDiscountColumn').checked,
+                    showVAT: document.getElementById('showVATColumn').checked,
+                    companySettings: companySettings,
+                    exportedAt: new Date().toISOString()
+                };
+                
+                const dataStr = JSON.stringify(quote, null, 2);
+                const dataBlob = new Blob([dataStr], { type: 'application/json' });
+                const url = URL.createObjectURL(dataBlob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `teklif-${quote.number || 'export'}-${new Date().toISOString().split('T')[0]}.json`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+                
+                this.showAlert('✅ Teklif JSON olarak export edildi!');
+            },
+            
+            // Import quote from JSON file
+            importQuote() {
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.accept = '.json';
+                input.onchange = (e) => {
+                    const file = e.target.files[0];
+                    if (!file) return;
+                    
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                        try {
+                            const quote = JSON.parse(event.target.result);
+                            
+                            // Fill form with imported data
+                            if (quote.title) document.getElementById('quoteTitle').value = quote.title;
+                            if (quote.number) document.getElementById('quoteNumber').value = quote.number;
+                            if (quote.date) document.getElementById('quoteDate').value = quote.date;
+                            if (quote.validityDays) document.getElementById('quoteValidityDays').value = quote.validityDays;
+                            if (quote.scope) document.getElementById('quoteScope').value = quote.scope;
+                            
+                            if (quote.customer) {
+                                if (quote.customer.company) document.getElementById('customerCompany').value = quote.customer.company;
+                                if (quote.customer.contact) document.getElementById('customerContact').value = quote.customer.contact;
+                                if (quote.customer.phone) document.getElementById('customerPhone').value = quote.customer.phone;
+                                if (quote.customer.email) document.getElementById('customerEmail').value = quote.customer.email;
+                            }
+                            
+                            if (quote.items) {
+                                this.currentQuote.items = quote.items;
+                                this.renderQuoteItems();
+                            }
+                            
+                            if (quote.options) {
+                                this.currentQuote.options = quote.options;
+                                this.renderQuoteOptions();
+                            }
+                            
+                            if (quote.explanations) {
+                                document.getElementById('quoteExplanations').value = quote.explanations;
+                                if (this.explanationsEditor) {
+                                    this.explanationsEditor.root.innerHTML = quote.explanations;
+                                }
+                            }
+                            
+                            if (quote.showDiscount !== undefined) {
+                                document.getElementById('showDiscountColumn').checked = quote.showDiscount;
+                            }
+                            
+                            if (quote.showVAT !== undefined) {
+                                document.getElementById('showVATColumn').checked = quote.showVAT;
+                            }
+                            
+                            if (quote.totals) {
+                                this.currentQuote.totals = quote.totals;
+                                this.calculateTotals();
+                            }
+                            
+                            // Import company settings if available
+                            if (quote.companySettings) {
+                                const currentSettings = this.loadFromStorage('companySettings', {});
+                                const mergedSettings = { ...currentSettings, ...quote.companySettings };
+                                this.saveToStorage('companySettings', mergedSettings);
+                                this.loadCompanySettings();
+                            }
+                            
+                            this.showAlert('✅ Teklif başarıyla import edildi!');
+                        } catch (error) {
+                            console.error('Import hatası:', error);
+                            this.showAlert('❌ JSON dosyası geçersiz!', 'error');
+                        }
+                    };
+                    reader.readAsText(file);
+                };
+                input.click();
+            },
 
             async clearQuote() {
                 const result = await Swal.fire({
@@ -3644,6 +3769,350 @@
                 return date.toLocaleDateString('tr-TR');
             },
             
+            // Get all print styles as string
+            getPrintStyles() {
+                return `
+                    <style>
+                        * {
+                            margin: 0;
+                            padding: 0;
+                            box-sizing: border-box;
+                        }
+                        
+                        :root {
+                            --primary-color: #00BCD4;
+                            --secondary-color: #0097A7;
+                            --text-dark: #1e293b;
+                            --text-light: #64748b;
+                            --border-color: #e2e8f0;
+                        }
+                        
+                        body {
+                            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                            background-color: white;
+                            color: var(--text-dark);
+                            line-height: 1.6;
+                            padding: 20px;
+                        }
+                        
+                        .quote-preview {
+                            max-width: 100%;
+                            font-size: 10pt;
+                            padding: 0;
+                            margin: 0;
+                        }
+                        
+                        /* PDF Header Style */
+                        .pdf-header {
+                            display: flex;
+                            justify-content: space-between;
+                            align-items: center;
+                            padding-bottom: 15px;
+                            border-bottom: 4px solid var(--primary-color);
+                            margin-bottom: 30px;
+                        }
+                        
+                        .pdf-header-logo {
+                            max-width: 120px !important;
+                            max-height: 40px !important;
+                            width: auto !important;
+                            height: auto !important;
+                            object-fit: contain;
+                            margin-right: 20px;
+                            display: block;
+                        }
+                        
+                        .pdf-header-text {
+                            text-align: center;
+                            flex: 1;
+                        }
+                        
+                        .pdf-header-qr {
+                            width: 60px;
+                            height: 60px;
+                            margin-left: 20px;
+                        }
+                        
+                        .pdf-header-text h1 {
+                            font-size: 20pt;
+                            color: var(--primary-color);
+                            margin: 0;
+                            letter-spacing: 2px;
+                        }
+                        
+                        .pdf-header-text .tagline {
+                            font-size: 9pt;
+                            color: var(--text-light);
+                            font-style: italic;
+                        }
+                        
+                        /* Quote Title */
+                        .quote-title {
+                            text-align: center;
+                            font-size: 18pt;
+                            font-weight: bold;
+                            margin: 20px 0;
+                            color: var(--text-dark);
+                            text-transform: uppercase;
+                            letter-spacing: 1px;
+                        }
+                        
+                        /* Customer Info Box */
+                        .quote-customer-compact {
+                            display: grid;
+                            grid-template-columns: 1fr 1fr 1fr;
+                            gap: 15px;
+                            margin-bottom: 25px;
+                            font-size: 9pt;
+                        }
+                        
+                        .info-item {
+                            display: flex;
+                            flex-direction: column;
+                        }
+                        
+                        .info-item strong {
+                            color: var(--text-light);
+                            font-size: 8pt;
+                            font-style: italic;
+                            margin-bottom: 2px;
+                        }
+                        
+                        .info-item span {
+                            color: var(--text-dark);
+                            font-weight: 600;
+                        }
+                        
+                        /* Quote Items Table - PDF Style */
+                        .quote-items-table-pdf {
+                            width: 100%;
+                            margin: 20px 0;
+                            border-collapse: collapse;
+                            font-size: 10pt;
+                            table-layout: fixed;
+                        }
+                        
+                        .quote-items-table-pdf thead {
+                            background-color: var(--primary-color);
+                            color: white;
+                        }
+                        
+                        .quote-items-table-pdf th {
+                            padding: 10px 8px;
+                            text-align: left;
+                            font-size: 9pt;
+                            font-weight: 600;
+                        }
+                        
+                        .quote-items-table-pdf td {
+                            padding: 10px 8px;
+                            border: 1px solid var(--border-color);
+                            vertical-align: middle;
+                            word-wrap: break-word;
+                            overflow-wrap: break-word;
+                        }
+                        
+                        .quote-items-table-pdf .main-item-row td {
+                            background-color: #f9fafb;
+                            font-weight: 600;
+                        }
+                        
+                        .quote-items-table-pdf .detail-row td {
+                            padding-left: 25px;
+                            font-size: 9pt;
+                            border-top: none;
+                        }
+                        
+                        .quote-items-table-pdf ul {
+                            margin: 5px 0;
+                            padding-left: 20px;
+                        }
+                        
+                        .quote-items-table-pdf ul li {
+                            margin: 3px 0;
+                        }
+                        
+                        /* Totals Section */
+                        .quote-totals-pdf {
+                            margin-top: 25px;
+                            display: flex;
+                            justify-content: flex-end;
+                        }
+                        
+                        .quote-totals-box-pdf {
+                            width: 350px;
+                            font-size: 10pt;
+                            background-color: #f9fafb;
+                            padding: 15px;
+                            border: 2px solid var(--primary-color);
+                            border-radius: 6px;
+                        }
+                        
+                        .quote-totals-row {
+                            display: flex;
+                            justify-content: space-between;
+                            padding: 10px 15px;
+                            border-bottom: 1px solid var(--border-color);
+                            font-weight: 600;
+                        }
+                        
+                        .quote-totals-row:last-child {
+                            background-color: #f0f0f0;
+                            font-weight: bold;
+                            font-size: 12pt;
+                            border-bottom: none;
+                            border-top: 2px solid var(--primary-color);
+                            margin-top: 5px;
+                            padding-top: 15px;
+                            border: 2px solid var(--text-dark);
+                        }
+                        
+                        /* Bank Info & Notes */
+                        .quote-bank-info {
+                            margin-top: 30px;
+                            padding: 15px;
+                            background-color: #f9fafb;
+                            border-left: 4px solid var(--primary-color);
+                            font-size: 9pt;
+                        }
+                        
+                        .quote-bank-info h3 {
+                            font-size: 11pt;
+                            margin-bottom: 10px;
+                            color: var(--primary-color);
+                        }
+                        
+                        .quote-notes-section {
+                            margin-top: 25px;
+                            padding: 15px;
+                            border: 1px solid var(--border-color);
+                            background-color: #fffef0;
+                            font-size: 9pt;
+                        }
+                        
+                        .quote-notes-section h3 {
+                            font-size: 11pt;
+                            margin-bottom: 10px;
+                            color: var(--text-dark);
+                        }
+                        
+                        .quote-notes-section ul {
+                            margin-left: 20px;
+                        }
+                        
+                        .quote-notes-section ul li {
+                            margin: 5px 0;
+                        }
+                        
+                        /* PDF Footer */
+                        .pdf-footer {
+                            margin-top: 50px;
+                            padding-top: 20px;
+                            border-top: 4px solid var(--primary-color);
+                            display: flex;
+                            justify-content: space-between;
+                            align-items: center;
+                            font-size: 9pt;
+                        }
+                        
+                        .pdf-footer-left {
+                            display: flex;
+                            align-items: center;
+                            gap: 15px;
+                        }
+                        
+                        .pdf-footer-logo {
+                            max-width: 120px !important;
+                            max-height: 40px !important;
+                            width: auto !important;
+                            height: auto !important;
+                            object-fit: contain;
+                            display: block;
+                        }
+                        
+                        .pdf-footer-right {
+                            display: flex;
+                            flex-direction: column;
+                            gap: 5px;
+                            font-size: 9pt;
+                            text-align: right;
+                            color: var(--text-light);
+                        }
+                        
+                        .pdf-footer-right div {
+                            display: flex;
+                            align-items: center;
+                            gap: 5px;
+                            font-size: 11pt;
+                        }
+                        
+                        .pdf-footer-right a {
+                            font-size: inherit;
+                        }
+                        
+                        /* Quote Scope Section */
+                        .quote-scope-section {
+                            margin: 30px 0;
+                            padding: 20px;
+                            border-left: 4px solid var(--primary-color);
+                            background-color: #f9fafb;
+                        }
+                        
+                        .quote-scope-section h3 {
+                            font-size: 12pt;
+                            margin-bottom: 10px;
+                            color: var(--primary-color);
+                            text-transform: uppercase;
+                        }
+                        
+                        .quote-scope-section p {
+                            font-size: 10pt;
+                            line-height: 1.8;
+                            text-align: justify;
+                        }
+                        
+                        /* Print specific styles */
+                        @media print {
+                            @page {
+                                margin: 1.5cm;
+                                margin-top: 3cm;
+                                margin-bottom: 2.5cm;
+                                size: A4 portrait;
+                            }
+                            
+                            body {
+                                margin: 0;
+                                padding: 0;
+                            }
+                            
+                            .pdf-header,
+                            .pdf-footer,
+                            .quote-items-table-pdf,
+                            .quote-signature-section {
+                                page-break-inside: avoid;
+                            }
+                            
+                            .quote-items-table-pdf tr {
+                                page-break-inside: avoid;
+                            }
+                            
+                            .main-item-row {
+                                page-break-after: avoid;
+                            }
+                            
+                            .detail-row {
+                                page-break-before: avoid;
+                            }
+                            
+                            * {
+                                -webkit-print-color-adjust: exact;
+                                print-color-adjust: exact;
+                            }
+                        }
+                    </style>
+                `;
+            },
+            
             // Print in new window
             printInNewWindow() {
                 const printContent = document.getElementById('quotePrintArea').innerHTML;
@@ -3654,14 +4123,73 @@
                     return;
                 }
                 
+                const companySettings = this.loadFromStorage('companySettings', {});
+                const styles = this.getPrintStyles();
                 printWindow.document.open();
-                printWindow.document.write("<!DOCTYPE html><html lang=\"tr\"><head><meta charset=\"UTF-8\"><title>Teklif Yazdır</title><style>@page{margin:1.5cm;size:A4 portrait}@media print{body{margin:0;padding:0}}body{font-family:\"Segoe UI\",Tahoma,Geneva,Verdana,sans-serif;padding:20px}.quote-preview{max-width:100%}</style></head><body>");
+                const htmlContent = '<!DOCTYPE html><html lang="tr"><head><meta charset="UTF-8"><title>Teklif Yazdır</title><script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"><\/script>' + styles + '<\/head><body>';
+                printWindow.document.write(htmlContent);
                 printWindow.document.body.innerHTML = printContent;
-                const script = printWindow.document.createElement('script');
-                script.textContent = 'window.onload=function(){window.print()}';
-                printWindow.document.body.appendChild(script);
                 printWindow.document.close();
-                printWindow.document.close();
+                
+                // Wait for document to be ready
+                printWindow.onload = () => {
+                    // Fix logo sizes
+                    const logos = printWindow.document.querySelectorAll('.pdf-header-logo, .pdf-footer-logo');
+                    logos.forEach(logo => {
+                        logo.style.maxWidth = '120px';
+                        logo.style.maxHeight = '40px';
+                        logo.style.width = 'auto';
+                        logo.style.height = 'auto';
+                        logo.style.objectFit = 'contain';
+                    });
+                    
+                    // Generate QR codes if needed
+                    if (companySettings.website) {
+                        const qrElement = printWindow.document.getElementById('qrCode-preview');
+                        if (qrElement && typeof QRCode !== 'undefined') {
+                            const qrUrl = companySettings.website.startsWith('http') ? companySettings.website : 'https://' + companySettings.website;
+                            new QRCode(qrElement, {
+                                text: qrUrl,
+                                width: 60,
+                                height: 60,
+                                colorDark: '#1e293b',
+                                colorLight: '#ffffff',
+                                correctLevel: QRCode.CorrectLevel.H
+                            });
+                        }
+                    }
+                    
+                    // Wait for images to load before printing
+                    const images = printWindow.document.querySelectorAll('img');
+                    let loadedCount = 0;
+                    const totalImages = images.length;
+                    
+                    const tryPrint = () => {
+                        if (loadedCount === totalImages) {
+                            setTimeout(() => printWindow.print(), 100);
+                        }
+                    };
+                    
+                    if (totalImages === 0) {
+                        tryPrint();
+                    } else {
+                        images.forEach(img => {
+                            if (img.complete) {
+                                loadedCount++;
+                                tryPrint();
+                            } else {
+                                img.onload = () => {
+                                    loadedCount++;
+                                    tryPrint();
+                                };
+                                img.onerror = () => {
+                                    loadedCount++;
+                                    tryPrint();
+                                };
+                            }
+                        });
+                    }
+                };
             },
             
             printQuoteInNewWindow(quoteId) {
@@ -3685,14 +4213,72 @@
                 }
                 
                 const escapedTitle = this.escapeHtml(quote.number);
+                const styles = this.getPrintStyles();
                 printWindow.document.open();
-                printWindow.document.write("<!DOCTYPE html><html lang=\"tr\"><head><meta charset=\"UTF-8\"><title>Teklif Yazdır - " + escapedTitle + "</title><style>@page{margin:1.5cm;size:A4 portrait}@media print{body{margin:0;padding:0}}body{font-family:\"Segoe UI\",Tahoma,Geneva,Verdana,sans-serif;padding:20px}.quote-preview{max-width:100%}</style></head><body>");
+                const htmlContent = '<!DOCTYPE html><html lang="tr"><head><meta charset="UTF-8"><title>Teklif Yazdır - ' + escapedTitle + '</title><script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"><\/script>' + styles + '<\/head><body>';
+                printWindow.document.write(htmlContent);
                 printWindow.document.body.innerHTML = printContent;
-                const script = printWindow.document.createElement('script');
-                script.textContent = 'window.onload=function(){window.print()}';
-                printWindow.document.body.appendChild(script);
                 printWindow.document.close();
-                printWindow.document.close();
+                
+                // Wait for document to be ready
+                printWindow.onload = () => {
+                    // Fix logo sizes
+                    const logos = printWindow.document.querySelectorAll('.pdf-header-logo, .pdf-footer-logo');
+                    logos.forEach(logo => {
+                        logo.style.maxWidth = '120px';
+                        logo.style.maxHeight = '40px';
+                        logo.style.width = 'auto';
+                        logo.style.height = 'auto';
+                        logo.style.objectFit = 'contain';
+                    });
+                    
+                    // Generate QR codes if needed
+                    if (companySettings.website) {
+                        const qrElement = printWindow.document.getElementById(`qrCode-${quote.id}`);
+                        if (qrElement && typeof QRCode !== 'undefined') {
+                            const qrUrl = companySettings.website.startsWith('http') ? companySettings.website : 'https://' + companySettings.website;
+                            new QRCode(qrElement, {
+                                text: qrUrl,
+                                width: 60,
+                                height: 60,
+                                colorDark: '#1e293b',
+                                colorLight: '#ffffff',
+                                correctLevel: QRCode.CorrectLevel.H
+                            });
+                        }
+                    }
+                    
+                    // Wait for images to load before printing
+                    const images = printWindow.document.querySelectorAll('img');
+                    let loadedCount = 0;
+                    const totalImages = images.length;
+                    
+                    const tryPrint = () => {
+                        if (loadedCount === totalImages) {
+                            setTimeout(() => printWindow.print(), 100);
+                        }
+                    };
+                    
+                    if (totalImages === 0) {
+                        tryPrint();
+                    } else {
+                        images.forEach(img => {
+                            if (img.complete) {
+                                loadedCount++;
+                                tryPrint();
+                            } else {
+                                img.onload = () => {
+                                    loadedCount++;
+                                    tryPrint();
+                                };
+                                img.onerror = () => {
+                                    loadedCount++;
+                                    tryPrint();
+                                };
+                            }
+                        });
+                    }
+                };
             },
 
             getCurrencySymbol(currency) {
@@ -3703,6 +4289,10 @@
                     'GBP': '£'
                 };
                 return symbols[currency] || currency;
+            },
+            
+            formatCurrency(amount, currency) {
+                return `${this.formatNumber(amount)} ${this.getCurrencySymbol(currency)}`;
             },
 
             escapeHtml(text) {
