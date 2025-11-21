@@ -790,7 +790,9 @@
             .btn, .btn-group, .header, .nav-tabs, .section-title, .form-grid, h2.section-title { display: none !important; }
             .quote-preview { max-width: 100%; font-size: 10pt; padding: 0; margin: 0; }
             @page { margin: 1.5cm 1.5cm 2.5cm 1.5cm; size: A4 portrait; }
-            .pdf-header, .pdf-footer, .quote-signature-section, .quote-notes-section, .quote-bank-info, .quote-totals-pdf { page-break-inside: avoid; }
+            .pdf-header, .pdf-footer, .quote-signature-section, .quote-totals-pdf { page-break-inside: avoid; }
+            .quote-bank-info { page-break-inside: avoid; page-break-after: avoid; }
+            .quote-notes-section { page-break-inside: avoid; page-break-before: avoid; }
             .quote-items-table-pdf { page-break-inside: auto; }
             .quote-items-table-pdf thead { display: table-header-group; }
             .quote-items-table-pdf tr { page-break-inside: avoid; page-break-after: auto; }
@@ -3505,7 +3507,7 @@
 
                         <!-- Bank Info -->
                         ${(companySettings.bankAccounts && companySettings.bankAccounts.length > 0) || companySettings.bankName ? `
-                        <div class="quote-bank-info" style="margin-top: 40px; margin-bottom: 30px;">
+                        <div class="quote-bank-info" style="margin-top: 20px; margin-bottom: 10px;">
                             <h3>Ödeme Bilgileri</h3>
                             ${companySettings.bankAccounts && companySettings.bankAccounts.length > 0 ? 
                                 companySettings.bankAccounts.map(account => `
@@ -3528,7 +3530,7 @@
 
                         <!-- Explanations -->
                         ${quote.explanations ? `
-                        <div class="quote-notes-section" style="margin-top: 40px; margin-bottom: 30px;">
+                        <div class="quote-notes-section" style="margin-top: 15px; margin-bottom: 10px;">
                             <div class="quote-notes-header" style="font-size: 14pt; font-weight: bold; margin-bottom: 15px; color: var(--primary-color); border-bottom: 2px solid var(--primary-color); padding-bottom: 5px;">Açıklamalar</div>
                             <div style="font-size: 10pt; line-height: 1.8;">
                                 ${quote.explanations.includes('<') ? quote.explanations : quote.explanations.split('\n').filter(line => line.trim()).map(line =>
@@ -4144,10 +4146,18 @@
                             .pdf-header,
                             .pdf-footer,
                             .quote-signature-section,
-                            .quote-notes-section,
-                            .quote-bank-info,
                             .quote-totals-pdf {
                                 page-break-inside: avoid;
+                            }
+
+                            .quote-bank-info {
+                                page-break-inside: avoid;
+                                page-break-after: avoid;
+                            }
+
+                            .quote-notes-section {
+                                page-break-inside: avoid;
+                                page-break-before: avoid;
                             }
 
                             /* Tablo satırlarını bir arada tut */
