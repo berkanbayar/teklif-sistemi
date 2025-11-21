@@ -790,10 +790,13 @@
             .btn, .btn-group, .header, .nav-tabs, .section-title, .form-grid, h2.section-title { display: none !important; }
             .quote-preview { max-width: 100%; font-size: 10pt; padding: 0; margin: 0; }
             @page { margin: 1.5cm 1.5cm 2.5cm 1.5cm; size: A4 portrait; }
-            .pdf-header, .pdf-footer, .quote-items-table-pdf, .quote-signature-section, .quote-notes-section { page-break-inside: avoid; }
-            .quote-items-table-pdf tr { page-break-inside: avoid; }
+            .pdf-header, .pdf-footer, .quote-signature-section, .quote-notes-section, .quote-bank-info, .quote-totals-pdf { page-break-inside: avoid; }
+            .quote-items-table-pdf { page-break-inside: auto; }
+            .quote-items-table-pdf thead { display: table-header-group; }
+            .quote-items-table-pdf tr { page-break-inside: avoid; page-break-after: auto; }
             .main-item-row { page-break-after: avoid; }
-            .detail-row { page-break-before: avoid; }
+            .main-item-row + .detail-row { page-break-before: avoid; }
+            .detail-row { page-break-inside: avoid; }
             * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         }
 
@@ -4140,21 +4143,42 @@
                             
                             .pdf-header,
                             .pdf-footer,
-                            .quote-items-table-pdf,
-                            .quote-signature-section {
+                            .quote-signature-section,
+                            .quote-notes-section,
+                            .quote-bank-info,
+                            .quote-totals-pdf {
                                 page-break-inside: avoid;
                             }
-                            
+
+                            /* Tablo satırlarını bir arada tut */
+                            .quote-items-table-pdf {
+                                page-break-inside: auto;
+                            }
+
+                            .quote-items-table-pdf thead {
+                                display: table-header-group;
+                            }
+
+                            .quote-items-table-pdf tbody {
+                                page-break-inside: auto;
+                            }
+
                             .quote-items-table-pdf tr {
                                 page-break-inside: avoid;
+                                page-break-after: auto;
                             }
-                            
+
+                            /* Ana satır ve detay satırını birlikte tut */
                             .main-item-row {
                                 page-break-after: avoid;
                             }
-                            
-                            .detail-row {
+
+                            .main-item-row + .detail-row {
                                 page-break-before: avoid;
+                            }
+
+                            .detail-row {
+                                page-break-inside: avoid;
                             }
                             
                             * {
